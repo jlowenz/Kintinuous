@@ -4,6 +4,8 @@ project(Kintinuous)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
+set(CMAKE_CXX_STANDARD 14)
+
 find_package(OpenNI2 REQUIRED)
 find_package(Pangolin 0.1 REQUIRED)
 find_package(OpenCV REQUIRED)
