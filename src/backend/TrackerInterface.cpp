@@ -23,6 +23,7 @@ TrackerInterface::TrackerInterface(LogReader * logRead, cv::Mat * depthIntrinsic
  : ThreadObject("TrackerInterfaceThread"),
    endRequested(false),
    logRead(logRead),
+   frontend(0),
    currentFrame(0),
    firstRun(true)
 {

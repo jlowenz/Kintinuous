@@ -21,6 +21,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/algorithm.hpp>
 #include <boost/algorithm/string.hpp>
+#include <chrono>
+#include <thread>
 
 MainController * MainController::controller = 0;
 
@@ -100,9 +102,28 @@ bool MainController::setup()
   }
 
   systemComponents.push_back(trackerInterface);
+  KintinuousTracker* frontend = trackerInterface->getFrontend();
+  std::cout << "tdp: " << (unsigned long)&(ThreadDataPack::get()) << std::endl;
+  std::cout << "tdp: " << (unsigned long)&(ThreadDataPack::get()) << std::endl;
+  std::cout << "frontend:     " << (unsigned long)frontend << std::endl;
+  ThreadDataPack::get().assignFrontend(frontend);
+  std::cout << "tdp: " << (unsigned long)&(ThreadDataPack::get()) << std::endl;
+  std::cout << "tdp::tracker: " << ThreadDataPack::get().getFrontend() << std::endl;
+  std::cout << "tdp::tracker: " << ThreadDataPack::get().tracker << std::endl;
+  ThreadDataPack& tdp = ThreadDataPack::get();
+  std::cout << "tdp::tracker: " << tdp.tracker << std::endl;
+  std::cout << "tdp::tracker: " << tdp.getFrontend() << std::endl;
+  std::cout << "tdp::tracker: " << ThreadDataPack::get().getFrontend() << std::endl;
+  std::cout << "assert coming up!" << std::endl;
 
-  ThreadDataPack::get().assignFrontend(trackerInterface->getFrontend());
+  if (ThreadDataPack::get().tracker != ThreadDataPack::get().getFrontend()) {
+    std::cerr << "How can they NOT be equal... " << std::endl;
+  }
+  assert(ThreadDataPack::get().tracker == ThreadDataPack::get().getFrontend());
 
+  assert(&tdp == &ThreadDataPack::get());
+  assert(ThreadDataPack::get().tracker);
+  assert(&ThreadDataPack::get() == &trackerInterface->threadPack);
   cloudSliceProcessor = new CloudSliceProcessor();
   systemComponents.push_back(cloudSliceProcessor);
 
@@ -135,7 +156,7 @@ bool MainController::setup()
     ThreadDataPack::get().placeRecognitionFinished.assignValue(true);
   }
 
-  //pangoVis = new PangoVis(depthIntrinsics);
+  // pangoVis = new PangoVis(depthIntrinsics);
 
   return true;
 }
@@ -156,6 +177,14 @@ int MainController::mainLoop()
     pangoVis->start();
   }
 
+  // busy wait!
+  using namespace std::chrono_literals;
+  while (trackerInterface->running()) {
+    std::this_thread::sleep_for(1s);
+  }
+  // tracker IS DONE, so shutdown
+  save();
+  
   threads.join_all();
 
   for(unsigned int i = 0; i < systemComponents.size(); i++)
@@ -175,6 +204,8 @@ int MainController::mainLoop()
     delete rw_reader;
   }
 
+  shutdown();
+  
   return 0;
 }
 

@@ -15,7 +15,7 @@
  * If you wish to use any of this code for commercial purposes then 
  * please email commercialisation@nuim.ie.
  */
-
+#pragma once
 #ifndef THREADDATAPACK_H_
 #define THREADDATAPACK_H_
 
@@ -31,136 +31,65 @@
 #include <pcl/PolygonMesh.h>
 #include <pcl/visualization/keyboard_event.h>
 
+
+
+
 class ThreadDataPack
 {
-    public:
-        static ThreadDataPack & get()
-        {
-            static ThreadDataPack instance;
-            return instance;
-        }
+public:
+  static ThreadDataPack & get();
+  static ThreadDataPack* getp();
+  virtual ~ThreadDataPack();
+  void assignFrontend(KintinuousTracker * frontend);
+  KintinuousTracker* getFrontend();
+  void reset();        
+  void notifyVariables();
 
-        virtual ~ThreadDataPack()
-        {
-            if(incrementalMesh)
-            {
-                delete incrementalMesh;
-            }
-        }
+  IncrementalMesh * incrementalMesh;
+  std::vector<pcl::PolygonMesh *> triangles;
 
-        void assignFrontend(KintinuousTracker * frontend)
-        {
-            assert(!tracker);
-            tracker = frontend;
-        }
+  pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr pointPool;
+  boost::mutex poolMutex;
+  ThreadMutexObject<bool> poolLooped;
+  ThreadMutexObject<Eigen::Matrix4f> loopOffset;
+  ThreadMutexObject<Eigen::Matrix4f> isamOffset;
 
-        void reset()
-        {
-            //We only delete this because the first item is the initial pose slice
-            //created by the CloudSliceProcessor, the rest of the pointers are owned
-            //by the KintinuousTracker and dealt with there
-            if(cloudSlices.size())
-            {
-                delete cloudSlices.at(0);
-            }
+  boost::mutex incMeshMutex;
+  ThreadMutexObject<bool> incMeshLooped;
 
-            cloudSlices.clear();
+  ThreadMutexObject<bool> finalised;
 
-            for(unsigned int i = 0; i < triangles.size(); i++)
-            {
-                delete triangles.at(i);
-            }
+  ThreadMutexObject<bool> limit;
 
-            triangles.clear();
+  KintinuousTracker * tracker;
+  std::vector<CloudSlice *> cloudSlices;
 
-            for(unsigned int i = 0; i < loopClosureConstraints.size(); i++)
-            {
-                delete loopClosureConstraints.at(i);
-            }
-            loopClosureConstraints.clear();
+  ThreadMutexObject<uint64_t> lastLoopTime;
+  ThreadMutexObject<bool> readyForLoop;
+  std::vector<LoopClosureConstraint *> loopClosureConstraints;
 
-            if(incrementalMesh)
-            {
-                delete incrementalMesh;
-            }
+  ThreadMutexObject<int> latestLoopId;
+  ThreadMutexObject<int> latestMeshId;
+  ThreadMutexObject<int> latestPoseId;
+  ThreadMutexObject<bool> trackerFinished;
+  ThreadMutexObject<bool> cloudSliceProcessorFinished;
+  ThreadMutexObject<bool> meshGeneratorFinished;
+  ThreadMutexObject<bool> placeRecognitionFinished;
+  ThreadMutexObject<bool> deformationFinished;
+  ThreadMutexObject<int> trackerFrame;
+  ThreadMutexObject<bool> pauseCapture;
 
-            if(ConfigArgs::get().incrementalMesh)
-            {
-                incrementalMesh = new IncrementalMesh;
-            }
+private:
+  ThreadDataPack()
+    : incrementalMesh(0),
+      pointPool(new pcl::PointCloud<pcl::PointXYZRGBNormal>),
+      tracker(0)
+  {
+    reset();
+  }
 
-            pauseCapture.assignValue(false);
-            latestLoopId.assignValue(0);
-            latestPoseId.assignValue(0);
-            latestMeshId.assignValue(0);
-            trackerFinished.assignValue(false);
-            cloudSliceProcessorFinished.assignValue(false);
-            meshGeneratorFinished.assignValue(false);
-            placeRecognitionFinished.assignValue(false);
-            deformationFinished.assignValue(false);
-            trackerFrame.assignValue(0);
-            finalised.assignValue(false);
-            poolLooped.assignValue(false);
-            limit.assignValue(true);
-            incMeshLooped.assignValue(false);
-            loopOffset.assignValue(Eigen::Matrix4f::Identity());
-            isamOffset.assignValue(Eigen::Matrix4f::Identity());
-            lastLoopTime.assignValue(0);
-            readyForLoop.assignValue(true);
-
-            boost::mutex::scoped_lock lock(poolMutex);
-            pointPool->clear();
-        }
-        
-        void notifyVariables()
-        {
-            latestLoopId.notifyAll();
-            latestMeshId.notifyAll();
-            latestPoseId.notifyAll();
-        }
-
-        IncrementalMesh * incrementalMesh;
-        std::vector<pcl::PolygonMesh *> triangles;
-
-        pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr pointPool;
-        boost::mutex poolMutex;
-        ThreadMutexObject<bool> poolLooped;
-        ThreadMutexObject<Eigen::Matrix4f> loopOffset;
-        ThreadMutexObject<Eigen::Matrix4f> isamOffset;
-
-        boost::mutex incMeshMutex;
-        ThreadMutexObject<bool> incMeshLooped;
-
-        ThreadMutexObject<bool> finalised;
-
-        ThreadMutexObject<bool> limit;
-
-        KintinuousTracker * tracker;
-        std::vector<CloudSlice *> cloudSlices;
-
-        ThreadMutexObject<uint64_t> lastLoopTime;
-        ThreadMutexObject<bool> readyForLoop;
-        std::vector<LoopClosureConstraint *> loopClosureConstraints;
-
-        ThreadMutexObject<int> latestLoopId;
-        ThreadMutexObject<int> latestMeshId;
-        ThreadMutexObject<int> latestPoseId;
-        ThreadMutexObject<bool> trackerFinished;
-        ThreadMutexObject<bool> cloudSliceProcessorFinished;
-        ThreadMutexObject<bool> meshGeneratorFinished;
-        ThreadMutexObject<bool> placeRecognitionFinished;
-        ThreadMutexObject<bool> deformationFinished;
-        ThreadMutexObject<int> trackerFrame;
-        ThreadMutexObject<bool> pauseCapture;
-
-    private:
-        ThreadDataPack()
-         : incrementalMesh(0),
-           pointPool(new pcl::PointCloud<pcl::PointXYZRGBNormal>),
-           tracker(0)
-        {
-            reset();
-        }
+  ThreadDataPack(const ThreadDataPack&) = delete;
+  ThreadDataPack& operator=(const ThreadDataPack&) = delete;
 };
 
 #endif /* THREADDATAPACK_H_ */

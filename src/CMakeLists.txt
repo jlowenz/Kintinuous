@@ -65,7 +65,25 @@ add_library(backend STATIC ${backend} ${pnp})
 message("Sources: ${srcs}")
 
 add_executable(Kintinuous  MainController.cpp Kintinuous.cpp PangoVis.cpp)
-add_executable(KintinuousRW  MainControllerRW.cpp KintinuousRW.cpp PangoVis.cpp)
+add_executable(KintinuousRW  MainControllerRW.cpp KintinuousRW.cpp PangoVisRW.cpp)
+add_executable(tdp_test tdp_test.cpp)
+
+target_link_libraries(tdp_test
+  util
+  frontend
+  backend
+  ${PCL_LIBRARIES}
+  ${ZLIB_LIBRARY}
+  ${Pangolin_LIBRARIES}
+  ${Boost_LIBRARIES} 
+  ${CUDA_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${DLib_LIBS} 
+  ${DBoW2_LIBS}
+  ${OPENNI2_LIBRARY}
+  ${SUITESPARSE_LIBRARIES}
+  ${ISAM_LIBRARIES}
+  )
              
 target_link_libraries(Kintinuous
                       util

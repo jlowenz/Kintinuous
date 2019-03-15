@@ -54,7 +54,7 @@
 #include "backend/TrackerInterface.h"
 #include "utils/ConfigArgs.h"
 #include "frontend/Resolution.h"
-#include "PangoVis.h"
+#include "PangoVisRW.h"
 
 class MainController
 {
