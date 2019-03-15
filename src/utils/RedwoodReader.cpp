@@ -4,9 +4,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 
-RedwoodReader::RedwoodReader(const string& dataset_path, const std::string& obj,
-                             const std::string& seq, int width = 640, int height = 480)
-  : current_frame_(0), num_frames_(0), obj_(obj), seq_(seq)
+RedwoodReader::RedwoodReader(const std::string& dataset_path, const std::string& obj,
+                             const std::string& seq, int width, int height)
+  : current_frame_(0), num_frames_(0), obj_(obj), seq_(seq), width_(width), height_(height)
 {
   root_path_ = dataset_path;
   depth_scale_ = 1000; // pixel values are in mm
@@ -54,7 +54,7 @@ RedwoodReader::readNext()
   cv::cvtColor(bgr_img, rgb_img, cv::COLOR_BGR2RGB);
 
   memcpy(decompressedImage, rgb_img.data, rgb_img.total());
-  memcpy(decompressedDepth, depth_img.data, depth_img.total()*2);
+  memcpy(decompressedDepth, depth_img.data, depth_img.total()*sizeof(unsigned short));
   current_frame_++;
 }
 
@@ -92,26 +92,27 @@ RedwoodReader::get_rgb_names(const std::string& seq_id,
   path p(rgb_dir);
   assert(is_directory(p));
   for (auto& f : directory_iterator(p)) {
-    if (f.path().string().find(string("jpg")) != std::string::npos) {
+    if (f.path().string().find(std::string("jpg")) != std::string::npos) {
       rgb_names.push_back(f.path().string());
     }
   }
   std::sort(rgb_names.begin(), rgb_names.end());
 }
 
-  void get_depth_names(const std::string& seq_id,
-                       const std::string& seq_class,
-                       std::vector<std::string>& depth_names)
-  {
-    std::string depth_dir;
-    get_depth_dir(seq_id, seq_class, depth_dir);
-    path p(depth_dir);
-    assert(is_directory(p));
-    for (auto& f : directory_iterator(p)) {
-      if (f.path().string().find(string("png")) != std::string::npos) {
-        depth_names.push_back(f.path().string());
-      }
+void
+RedwoodReader::get_depth_names(const std::string& seq_id,
+                               const std::string& seq_class,
+                               std::vector<std::string>& depth_names)
+{
+  std::string depth_dir;
+  get_depth_dir(seq_id, seq_class, depth_dir);
+  path p(depth_dir);
+  assert(is_directory(p));
+  for (auto& f : directory_iterator(p)) {
+    if (f.path().string().find(std::string("png")) != std::string::npos) {
+      depth_names.push_back(f.path().string());
     }
-    std::sort(depth_names.begin(), depth_names.end());
   }
+  std::sort(depth_names.begin(), depth_names.end());
+}
 

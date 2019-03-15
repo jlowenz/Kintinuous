@@ -76,6 +76,8 @@ class ConfigArgs
         //Parameters
         std::string calibrationFile;
         std::string logFile;
+        std::string rwObject;
+        std::string rwSequence;
         std::string vocabFile;
         std::string trajectoryFile;
 
@@ -133,6 +135,8 @@ class ConfigArgs
             pcl::console::parse_argument(argc, argv, "-l", logFile);
             pcl::console::parse_argument(argc, argv, "-v", vocabFile);
             pcl::console::parse_argument(argc, argv, "-p", trajectoryFile);
+            pcl::console::parse_argument(argc, argv, "-rwo", rwObject);
+            pcl::console::parse_argument(argc, argv, "-rws", rwSequence);            
 
             pcl::console::parse_argument(argc, argv, "-gpu", gpu);
             pcl::console::parse_argument(argc, argv, "-t", voxelShift);

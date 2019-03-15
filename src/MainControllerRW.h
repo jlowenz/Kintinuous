@@ -43,8 +43,8 @@
 #include <pcl/io/pcd_io.h>
 
 #include "utils/Stopwatch.h"
-#include "utils/RawLogReader.h"
-#include "utils/LiveLogReader.h"
+#include "utils/RedwoodReader.h"
+
 #include "utils/ThreadDataPack.h"
 #include "frontend/cuda/internal.h"
 #include "backend/MeshGenerator.h"
@@ -93,8 +93,7 @@ class MainController
         CloudSliceProcessor * cloudSliceProcessor;
         Deformation * deformation;
 
-        RawLogReader * rawRead;
-        LiveLogReader * liveRead;
+        RedwoodReader* rw_reader;
         LogReader * logRead;
 
         boost::thread_group threads;

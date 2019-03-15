@@ -30,7 +30,6 @@ include_directories(${DLoopDetector_INCLUDE_DIRS})
 include_directories(${SUITESPARSE_INCLUDE_DIRS})
 include_directories(${ISAM_INCLUDE_DIRS})
 
-file(GLOB srcs *.cpp *.h*)
 file(GLOB utils utils/*.cpp utils/*.h*)
 file(GLOB frontend frontend/*.cpp frontend/*.h*)
 file(GLOB cuda frontend/cuda/*.cu)
@@ -63,10 +62,11 @@ add_library(util STATIC ${utils})
 add_library(frontend STATIC ${frontend} ${cuda} ${cuda_objs} ${containers})
 add_library(backend STATIC ${backend} ${pnp})
 
-add_executable(Kintinuous 
-               ${srcs}
-               )
+message("Sources: ${srcs}")
 
+add_executable(Kintinuous  MainController.cpp Kintinuous.cpp PangoVis.cpp)
+add_executable(KintinuousRW  MainControllerRW.cpp KintinuousRW.cpp PangoVis.cpp)
+             
 target_link_libraries(Kintinuous
                       util
                       frontend
@@ -83,3 +83,21 @@ target_link_libraries(Kintinuous
                       ${SUITESPARSE_LIBRARIES}
                       ${ISAM_LIBRARIES}
                       )
+
+target_link_libraries(KintinuousRW
+                      util
+                      frontend
+                      backend
+                      ${PCL_LIBRARIES}
+                      ${ZLIB_LIBRARY}
+                      ${Pangolin_LIBRARIES}
+                      ${Boost_LIBRARIES} 
+                      ${CUDA_LIBRARIES}
+                      ${OpenCV_LIBS}
+                      ${DLib_LIBS} 
+                      ${DBoW2_LIBS}
+                      ${OPENNI2_LIBRARY}
+                      ${SUITESPARSE_LIBRARIES}
+                      ${ISAM_LIBRARIES}
+                      )
+                   

@@ -15,17 +15,11 @@ struct RedwoodReader : public LogReader
   int num_frames_;
   std::string obj_, seq_;
   paths_t rgb_, depth_;
+  int width_, height_;
   
-  RedwoodReader(const string& dataset_path, const std::string& obj, const std::string& seq)
-    : current_frame_(0), num_frames_(0), obj_(obj), seq_(seq)
-  {
-    root_path_ = dataset_path;
-    depth_scale_ = 1000; // pixel values are in mm
-    get_rgb_names(seq_, obj_, rgb_);
-    get_depth_names(seq_, obj_, depth_);
-    isCompressed = false;
-  }
-  virtual ~RedwoodDataset() {}
+  RedwoodReader(const std::string& dataset_path, const std::string& obj,
+                const std::string& seq, int width = 640, int height = 480);
+  virtual ~RedwoodReader();
 
   bool grabNext(bool& returnVal, int& currentFrame);
   void readNext();
