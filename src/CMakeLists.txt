@@ -101,3 +101,4 @@ target_link_libraries(KintinuousRW
                       ${ISAM_LIBRARIES}
                       )
                    
+install(TARGETS Kintinuous KintinuousRW RUNTIME DESTINATION bin)
