@@ -38,6 +38,14 @@ main(int argc, char** argv)
   std::cout << "tdpp->tracker : " << tdpp->tracker << std::endl;
   std::cout << "frontend      : " << tdp.getFrontend() << std::endl;
 
+  tdpp->assignFrontend(reinterpret_cast<KintinuousTracker*>(4));
+  std::cout << "&tdp / tdpp   : " << &tdp << " / " << tdpp << std::endl;
+  std::cout << "&tdp.tracker  : " << &(tdp.tracker) << std::endl;
+  std::cout << "&tdpp->tracker  : " << &(tdpp->tracker) << std::endl;
+  std::cout << "tdp.tracker   : " << tdp.tracker << std::endl;
+  std::cout << "tdpp->tracker : " << tdpp->tracker << std::endl;
+  std::cout << "frontend      : " << tdp.getFrontend() << std::endl;
+
   
   return 0;
 }

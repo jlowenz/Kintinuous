@@ -1,16 +1,32 @@
-cmake_minimum_required(VERSION 2.6.0)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
-project(Kintinuous)
+project(Kintinuous LANGUAGES CXX CUDA)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}")
 
 set(CMAKE_CXX_STANDARD 14)
 
+macro(REMOVE_VTK_DEFINITIONS)
+  get_directory_property(_dir_defs COMPILE_DEFINITIONS)
+  message("COMPILE DEFS: ${_dir_defs}")
+  set(_vtk_definitions)
+  set(_defs)
+  foreach(_item ${_dir_defs})
+    if(_item MATCHES "vtk*")
+      list(APPEND _vtk_definitions ${_item})
+    else()
+      list(APPEND _defs ${_item})
+    endif()
+  endforeach()
+  remove_definitions(${_vtk_definitions})
+  set_property(DIRECTORY PROPERTY COMPILE_DEFINITIONS ${_defs})
+endmacro(REMOVE_VTK_DEFINITIONS)
+
 find_package(OpenNI2 REQUIRED)
 find_package(Pangolin 0.1 REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(ZLIB REQUIRED)
-find_package(CUDA 7.0 REQUIRED)
+find_package(CUDA 10.1 REQUIRED)
 find_package(DLib REQUIRED)
 find_package(DBoW2 REQUIRED)
 find_package(DLoopDetector REQUIRED)
@@ -44,10 +60,12 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 include(CudaComputeTargetFlags.cmake)                  
 APPEND_TARGET_ARCH_FLAGS()
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}  "-Xcompiler;-fPIC;")           
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}  "-Xcompiler;-fPIC;--shared;--cudart=shared;")           
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--ftz=true;--prec-div=false;--prec-sqrt=false") 
 
-CUDA_COMPILE(cuda_objs ${cuda})   
+#CUDA_COMPILE(cuda_objs ${cuda})   
+
+add_definitions(${CUDA_DEFINITIONS})
 
 #Include only after compiling with nvcc, this stops vtk polluting nvcc's definitions with whitespace
 find_package(PCL 1.7 QUIET REQUIRED)
@@ -58,15 +76,32 @@ add_definitions(${PCL_DEFINITIONS})
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -msse -msse2 -msse3 -O3 -std=c++11")
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -std=c++11")
 
-add_library(util STATIC ${utils})
-add_library(frontend STATIC ${frontend} ${cuda} ${cuda_objs} ${containers})
-add_library(backend STATIC ${backend} ${pnp})
+REMOVE_VTK_DEFINITIONS()
+add_library(util ${utils})
+add_library(frontend ${frontend} ${cuda} ${containers})
+target_link_libraries(frontend ${PCL_LIBRARIES}
+  ${ZLIB_LIBRARY}
+  ${Pangolin_LIBRARIES}
+  ${Boost_LIBRARIES} 
+  ${CUDA_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${DLib_LIBS} 
+  ${DBoW2_LIBS}
+  ${OPENNI2_LIBRARY}
+  ${SUITESPARSE_LIBRARIES}
+  ${ISAM_LIBRARIES})
+add_library(backend ${backend} ${pnp})
 
 message("Sources: ${srcs}")
 
 add_executable(Kintinuous  MainController.cpp Kintinuous.cpp PangoVis.cpp)
 add_executable(KintinuousRW  MainControllerRW.cpp KintinuousRW.cpp PangoVisRW.cpp)
 add_executable(tdp_test tdp_test.cpp)
+
+add_library(lvtest vtest.cpp)
+add_executable(vtest vtest_main.cpp)
+
+target_link_libraries(vtest lvtest ${Boost_LIBRARIES})
 
 target_link_libraries(tdp_test
   util

@@ -42,6 +42,7 @@ ThreadDataPack::getFrontend()
 {
   std::cout << "this: " << this << std::endl;
   std::cout << "this->tracker: " << this->tracker << std::endl;
+  std::cout << "&this->tracker:" << &(this->tracker) << std::endl;
   //assert(tracker == ThreadDataPack::get().tracker);
   return tracker;
 }

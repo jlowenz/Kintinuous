@@ -39,7 +39,7 @@ class ThreadDataPack
 public:
   static ThreadDataPack & get();
   static ThreadDataPack* getp();
-  virtual ~ThreadDataPack();
+  ~ThreadDataPack();
   void assignFrontend(KintinuousTracker * frontend);
   KintinuousTracker* getFrontend();
   void reset();        
