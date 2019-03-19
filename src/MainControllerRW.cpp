@@ -360,6 +360,7 @@ void MainController::shutdown()
 {
   for(size_t i = 0; i < systemComponents.size(); i++)
   {
+    std::cout << "stopping component " << i << std::endl;
     systemComponents.at(i)->stop();
   }
 

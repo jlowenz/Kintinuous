@@ -1,3 +1,4 @@
+#include <iostream>
 #include "RedwoodReader.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -18,6 +19,7 @@ RedwoodReader::RedwoodReader(const std::string& dataset_path, const std::string&
   decompressedDepth = new unsigned short[width * height];
 
   num_frames_ = rgb_.size();
+  std::cout << "RedwoodReader: found " << num_frames_ << " frames" << std::endl;
 }
 
 RedwoodReader::~RedwoodReader()
@@ -30,7 +32,8 @@ RedwoodReader::~RedwoodReader()
 bool
 RedwoodReader::grabNext(bool& returnVal, int& currentFrame)
 {
-  if (hasMore() && currentFrame < ConfigArgs::get().totalNumFrames) {
+  std::cout << "RR::grabNext/currentFrame " << currentFrame << std::endl;
+  if (hasMore()) {
     readNext();
     ThreadDataPack::get().trackerFrame.assignAndNotifyAll(currentFrame);
     return true;

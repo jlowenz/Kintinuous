@@ -19,81 +19,83 @@
 #ifndef THREADOBJECT_H_
 #define THREADOBJECT_H_
 
+#include <iostream>
 #include <assert.h>
 #include "ThreadDataPack.h"
 #include "Stopwatch.h"
 
 class ThreadObject
 {
-    public:
-        ThreadObject(std::string threadIdentifier)
-         : threadPack(ThreadDataPack::get()),
-           threadIdentifier(threadIdentifier)
-        {
-            //Heartbeat
-            Stopwatch::get().pulse(threadIdentifier);
-            Stopwatch::get().sendAll();
-            haltSignal.assignValue(false);
-            isRunning.assignValue(false);
-            lagTime.assignValue(0);
-        }
+ public:
+ ThreadObject(std::string threadIdentifier)
+   : threadPack(ThreadDataPack::get()),
+    threadIdentifier(threadIdentifier)
+    {
+      //Heartbeat
+      Stopwatch::get().pulse(threadIdentifier);
+      Stopwatch::get().sendAll();
+      haltSignal.assignValue(false);
+      isRunning.assignValue(false);
+      lagTime.assignValue(0);
+    }
 
-        virtual ~ThreadObject()
-        {}
+  virtual ~ThreadObject()
+    {}
 
-        virtual void reset()
-        {}
+  virtual void reset()
+  {}
 
-        void stop()
-        {
-            haltSignal.assignValue(true);
-        }
+  void stop()
+  {
+    std::cout << "Stopping " << threadIdentifier << std::endl;
+    haltSignal.assignValue(true);
+  }
 
-        void start()
-        {
-            haltSignal.assignValue(false);
-            run();
-        }
+  void start()
+  {
+    haltSignal.assignValue(false);
+    run();
+  }
 
-        std::string getThreadIdentifier()
-        {
-            return threadIdentifier;
-        }
+  std::string getThreadIdentifier()
+    {
+      return threadIdentifier;
+    }
 
-        bool running()
-        {
-            return isRunning.getValue();
-        }
+  bool running()
+  {
+    return isRunning.getValue();
+  }
 
-        ThreadDataPack & threadPack;
-        ThreadMutexObject<uint64_t> lagTime;
+  ThreadDataPack & threadPack;
+  ThreadMutexObject<uint64_t> lagTime;
 
-    protected:
-        void run()
-        {
-            std::cout << threadIdentifier << " started" << std::endl;
+ protected:
+  void run()
+  {
+    std::cout << threadIdentifier << " started" << std::endl;
 
-            isRunning.assignValue(true);
+    isRunning.assignValue(true);
 
-            while(process() && !haltSignal.getValue())
-            {
-                Stopwatch::get().sendAll();
-            }
+    while(process() && !haltSignal.getValue())
+      {
+        Stopwatch::get().sendAll();
+      }
 
-            isRunning.assignValue(false);
+    isRunning.assignValue(false);
 
-            std::cout << threadIdentifier << " ended" << std::endl;
-        }
+    std::cout << threadIdentifier << " ended" << std::endl;
+  }
 
-        virtual bool inline process()
-        {
-            assert(false);
-            return false;
-        }
+  virtual bool inline process()
+  {
+    assert(false);
+    return false;
+  }
 
-        std::string threadIdentifier;
-        ThreadMutexObject<bool> haltSignal;
-        ThreadMutexObject<bool> isRunning;
+  std::string threadIdentifier;
+  ThreadMutexObject<bool> haltSignal;
+  ThreadMutexObject<bool> isRunning;
 };
 
 #endif /* THREADOBJECT_H_ */
