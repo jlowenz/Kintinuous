@@ -23,6 +23,9 @@
 #include <cassert>
 #include <string>
 #include <pcl/console/parse.h>
+#include <boost/filesystem.hpp>
+
+namespace bfs = boost::filesystem;
 
 class ConfigArgs
 {
@@ -182,6 +185,12 @@ private:
       currentVal.append((char *)&buf, length);
 
       saveFile = currentVal;
+    } else {
+      bfs::path p(saveFile);
+      bfs::path par = p.parent_path();
+      if (!bfs::exists(par)) {
+        bfs::create_directories(par);
+      }
     }
   }
 };
