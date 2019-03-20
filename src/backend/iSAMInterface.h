@@ -25,43 +25,54 @@
 #include <isam.h>
 #include <stdint.h>
 #include "../utils/ConfigArgs.h"
+#include "../utils/types.hpp"
+
+
+typedef std::pair<uint64_t,Vector3d_t> ts_vector3d_t;
+typedef std::pair<uint64_t,Matrix4_t> ts_matrix4_t;
+
+typedef std::vector<ts_vector3d_t,
+                    Eigen::aligned_allocator<ts_vector3d_t>> cam_position_t;
+typedef std::vector<ts_matrix4_t,
+                    Eigen::aligned_allocator<ts_matrix4_t>> cam_pose_t;
 
 class iSAMInterface
 {
-    public:
-        EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        iSAMInterface();
-        virtual ~iSAMInterface();
+ public:
+  iSAMInterface();
+  virtual ~iSAMInterface();
 
-        void addCameraCameraConstraint(uint64_t time1, uint64_t time2,
-                                       const Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & Rprev, const Eigen::Vector3f & tprev,
-                                       const Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & Rcurr, const Eigen::Vector3f & tcurr);
+  void addCameraCameraConstraint(uint64_t time1, uint64_t time2,
+                                 const Matrix3_t & Rprev, const Vector3_t & tprev,
+                                 const Matrix3_t & Rcurr, const Vector3_t & tcurr);
 
-        isam::Pose3d_Pose3d_Factor * addLoopConstraint(uint64_t time1,
-                                                       uint64_t time2,
-                                                       Eigen::Matrix4d & loopConstraint);
+  isam::Pose3d_Pose3d_Factor * addLoopConstraint(uint64_t time1,
+                                                 uint64_t time2,
+                                                 Matrix4d_t & loopConstraint);
 
-        const std::list<isam::Factor* > & getFactors();
+  const std::list<isam::Factor* > & getFactors();
 
-        void getCameraPositions(std::vector<std::pair<uint64_t, Eigen::Vector3d> > & positions);
+  void getCameraPositions(cam_position_t& positions);
 
-        void getCameraPoses(std::vector<std::pair<uint64_t, Eigen::Matrix4f> > & poses);
+  void getCameraPoses(cam_pose_t & poses);
 
-        double optimise();
+  double optimise();
 
-        Eigen::Matrix4f getCameraPose(uint64_t id);
+  Matrix4_t getCameraPose(uint64_t id);
 
-        void removeFactor(isam::Pose3d_Pose3d_Factor * factor);
+  void removeFactor(isam::Pose3d_Pose3d_Factor * factor);
 
-    private:
-        isam::Pose3d_Node * cameraNode(uint64_t time);
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  
+ private:
+  isam::Pose3d_Node * cameraNode(uint64_t time);
 
-        isam::Slam * _slam;
-        std::map<uint64_t, isam::Pose3d_Node*> _camera_nodes;
+  isam::Slam * _slam;
+  std::map<uint64_t, isam::Pose3d_Node*> _camera_nodes;
 
-        Eigen::Matrix4f transformation2isam;
-        std::map<std::pair<uint64_t, uint64_t>, bool> cameraCameraConstraints;
-        std::map<std::pair<uint64_t, uint64_t>, bool> cameraPlaneConstraints;
+  Matrix4_t transformation2isam;
+  std::map<std::pair<uint64_t, uint64_t>, bool> cameraCameraConstraints;
+  std::map<std::pair<uint64_t, uint64_t>, bool> cameraPlaneConstraints;
 };
 
 #endif /* ISAMINTERFACE_H_ */

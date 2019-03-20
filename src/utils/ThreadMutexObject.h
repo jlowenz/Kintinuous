@@ -30,12 +30,12 @@ class ThreadMutexObject
         ThreadMutexObject()
         {}
 
-        ThreadMutexObject(T initialValue)
+        ThreadMutexObject(const T& initialValue)
          : object(initialValue),
            lastCopy(initialValue)
         {}
 
-        void assignValue(T newValue)
+        void assignValue(const T& newValue)
         {
             boost::mutex::scoped_lock lock(mutex);
 
@@ -52,7 +52,7 @@ class ThreadMutexObject
             return object;
         }
 
-        void assignAndNotifyAll(T newValue)
+        void assignAndNotifyAll(const T& newValue)
         {
             boost::mutex::scoped_lock lock(mutex);
 

@@ -24,13 +24,122 @@
 #include "../backend/LoopClosureConstraint.h"
 #include "../backend/IncrementalMesh.h"
 #include "ThreadMutexObject.h"
+#include "types.hpp"
 
 #include <vector>
 #include <boost/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <pcl/PolygonMesh.h>
 #include <pcl/visualization/keyboard_event.h>
+#include <Eigen/Core>
 
+class ThreadMutexObjectM
+{
+public:
+  ThreadMutexObjectM()
+    : object(new Matrix4_t),
+      lastCopy(new Matrix4_t)
+  {
+    std::cout << "constructing specialized matrix mutex object" << std::endl;
+  }
+
+  ThreadMutexObjectM(const Matrix4_t& initialValue)
+    : object(new Matrix4_t(initialValue)),
+      lastCopy(new Matrix4_t(initialValue))
+  {
+    std::cout << "constructing specialized matrix mutex object" << std::endl;
+  }
+
+  ~ThreadMutexObjectM()
+  {
+    delete object;
+    delete lastCopy;
+  }
+  
+  void assignValue(const Matrix4_t& newValue)
+  {
+    boost::mutex::scoped_lock lock(mutex);
+
+    *object = *lastCopy = newValue;
+  }
+
+  boost::mutex & getMutex()
+  {
+    return mutex;
+  }
+
+  Matrix4_t & getReference()
+  {
+    return *object;
+  }
+
+  void assignAndNotifyAll(const Matrix4_t& newValue)
+  {
+    boost::mutex::scoped_lock lock(mutex);
+
+    *object = newValue;
+
+    signal.notify_all();
+  }
+        
+  void notifyAll()
+  {
+    boost::mutex::scoped_lock lock(mutex);
+
+    signal.notify_all();
+  }
+
+  Matrix4_t getValue()
+  {
+    boost::mutex::scoped_lock lock(mutex);
+
+    *lastCopy = *object;
+
+    return *lastCopy;
+  }
+
+  Matrix4_t waitForSignal()
+  {
+    boost::mutex::scoped_lock lock(mutex);
+
+    signal.wait(mutex);
+
+    *lastCopy = *object;
+
+    return *lastCopy;
+  }
+
+  Matrix4_t getValueWait(int wait = 33000)
+  {
+    boost::this_thread::sleep(boost::posix_time::microseconds(wait));
+
+    boost::mutex::scoped_lock lock(mutex);
+
+    *lastCopy = *object;
+
+    return *lastCopy;
+  }
+
+  Matrix4_t & getReferenceWait(int wait = 33000)
+  {
+    boost::this_thread::sleep(boost::posix_time::microseconds(wait));
+
+    boost::mutex::scoped_lock lock(mutex);
+
+    *lastCopy = *object;
+
+    return *lastCopy;
+  }
+
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+        
+private:
+  Matrix4_t* object;
+  Matrix4_t* lastCopy;
+  boost::mutex mutex;
+  boost::condition_variable_any signal;
+};
 
 
 
@@ -45,14 +154,15 @@ public:
   void reset();        
   void notifyVariables();
 
+  ThreadMutexObjectM loopOffset;
+  ThreadMutexObjectM isamOffset;
+
   IncrementalMesh * incrementalMesh;
   std::vector<pcl::PolygonMesh *> triangles;
 
   pcl::PointCloud<pcl::PointXYZRGBNormal>::Ptr pointPool;
   boost::mutex poolMutex;
   ThreadMutexObject<bool> poolLooped;
-  ThreadMutexObject<Eigen::Matrix4f> loopOffset;
-  ThreadMutexObject<Eigen::Matrix4f> isamOffset;
 
   boost::mutex incMeshMutex;
   ThreadMutexObject<bool> incMeshLooped;
@@ -79,6 +189,8 @@ public:
   ThreadMutexObject<int> trackerFrame;
   ThreadMutexObject<bool> pauseCapture;
 
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  
 private:
   ThreadDataPack()
     : incrementalMesh(0),

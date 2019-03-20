@@ -19,6 +19,7 @@
 #ifndef RGBDODOMETRY_H_
 #define RGBDODOMETRY_H_
 
+#include "../utils/types.hpp"
 #include "../utils/Stopwatch.h"
 #include "OdometryProvider.h"
 #include <Eigen/Core>
@@ -38,8 +39,8 @@ class RGBDOdometry : public OdometryProvider
 {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        RGBDOdometry(std::vector<Eigen::Vector3f> & tvecs_,
-                     std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_,
+        RGBDOdometry(vectors3_t & tvecs_,
+                     matrices3_t & rmats_,
                      std::vector<DeviceArray2D<float> > & vmaps_g_prev_,
                      std::vector<DeviceArray2D<float> > & nmaps_g_prev_,
                      std::vector<DeviceArray2D<float> > & vmaps_curr_,
@@ -50,15 +51,15 @@ class RGBDOdometry : public OdometryProvider
 
         virtual ~RGBDOdometry();
 
-        CloudSlice::Odometry getIncrementalTransformation(Eigen::Vector3f & trans,
-                                                          Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rot,
+        CloudSlice::Odometry getIncrementalTransformation(Vector3_t & trans,
+                                                          Matrix3_t & rot,
                                                           const DeviceArray2D<unsigned short> & depth,
                                                           const DeviceArray2D<PixelRGB> & image,
                                                           uint64_t timestamp,
                                                           unsigned char * rgbImage,
                                                           unsigned short * depthData);
 
-        Eigen::MatrixXd getCovariance();
+        MatrixXd_t getCovariance();
 
         void firstRun(const DeviceArray2D<unsigned short> & depth,
                       const DeviceArray2D<PixelRGB> & image);
@@ -71,8 +72,8 @@ class RGBDOdometry : public OdometryProvider
                               DeviceArray2D<float> * destDepths,
                               DeviceArray2D<unsigned char> * destImages);
 
-        std::vector<Eigen::Vector3f> & tvecs_;
-        std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_;
+        vectors3_t & tvecs_;
+        matrices3_t & rmats_;
 
         std::vector<DeviceArray2D<float> > & vmaps_g_prev_;
         std::vector<DeviceArray2D<float> > & nmaps_g_prev_;
@@ -113,12 +114,12 @@ class RGBDOdometry : public OdometryProvider
         std::vector<int> iterations;
         std::vector<float> minimumGradientMagnitudes;
 
-        Eigen::Matrix<double, 6, 6, Eigen::RowMajor> lastA;
+        Matrix6d_t lastA;
 
         float distThres_;
         float angleThres_;
 
-        Eigen::Matrix<double, 6, 6> lastCov;
+        Matrix6d_t lastCov;
         cv::Mat resultRtICP;
         cv::Mat resultRtRGBD;
 };

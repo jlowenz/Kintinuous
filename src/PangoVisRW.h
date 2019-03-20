@@ -19,6 +19,7 @@
 #ifndef PANGOVIS_H_
 #define PANGOVIS_H_
 
+#include "utils/types.hpp"
 #include "utils/ThreadObject.h"
 #include "frontend/Volume.h"
 #include "utils/PangoCloud.h"
@@ -74,8 +75,8 @@ class PangoVis : public ThreadObject
         PangoMesh * incMesh;
         std::vector<PangoCloud*> clouds;
         std::vector<PangoMesh*> meshes;
-        std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> poses;
-        std::vector<std::pair<Eigen::Vector3f, Eigen::Vector3f>, Eigen::aligned_allocator<std::pair<Eigen::Vector3f, Eigen::Vector3f>>> lines;
+        matrices4_t poses;
+        std::vector<std::pair<Vector3_t, Vector3_t>, Eigen::aligned_allocator<std::pair<Vector3_t, Vector3_t>>> lines;
 
         pangolin::Var<bool> complete;
         pangolin::Var<bool> pause;

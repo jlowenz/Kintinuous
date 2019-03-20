@@ -110,7 +110,7 @@ class DeformationGraph
         std::vector<GraphNode *> & getGraph();
         std::vector<std::vector<VertexWeightMap> > & getVertexMap();
 
-        void addConstraint(int vertexId, Eigen::Vector3d & target);
+        void addConstraint(int vertexId, Vector3d_t & target);
         void removeConstraint(int vertexId);
         void clearConstraints();
 
@@ -147,13 +147,13 @@ class DeformationGraph
         {
             public:
                 Constraint(int vertexId,
-                           Eigen::Vector3d & targetPosition)
+                           Vector3d_t & targetPosition)
                  : vertexId(vertexId),
                    targetPosition(targetPosition)
                 {}
 
                 int vertexId;
-                Eigen::Vector3d targetPosition;
+                Vector3d_t targetPosition;
         };
 
         std::vector<Constraint> constraints;
@@ -188,29 +188,29 @@ class DeformationGraph
                                       std::vector<uint64_t> * vertexTimeMap,
                                       std::vector<uint64_t> * graphTimeMap);
 
-        void computeVertexPosition(int vertexId, Eigen::Vector3d & position, Eigen::Vector3d & normal);
+        void computeVertexPosition(int vertexId, Vector3d_t & position, Vector3d_t & normal);
 
         void sparseJacobian(Jacobian & jacobian, const int numRows, const int numCols);
 
-        Eigen::VectorXd sparseResidual(const int numRows);
+        VectorXd_t sparseResidual(const int numRows);
 
-        void applyDeltaSparse(Eigen::VectorXd & delta);
+        void applyDeltaSparse(VectorXd_t & delta);
 
         CholeskyDecomp cholesky;
 
         void applyGraphThread(int id, int numThreads);
 
-        Eigen::VectorXd sparseResidualRot(const int numRows)
+        VectorXd_t sparseResidualRot(const int numRows)
         {
             //Now the residual
-            Eigen::VectorXd residual(numRows);
+            VectorXd_t residual(numRows);
 
             int lastRow = 0;
 
             for(unsigned int j = 0; j < graph.size(); j++)
             {
                 //No weights for rotation as rotation weight = 1
-                const Eigen::Matrix3d & rotation = graph.at(j)->rotation;
+                const Matrix3d_t & rotation = graph.at(j)->rotation;
 
                 //ab + de + gh
                 residual(lastRow) = rotation.col(0).dot(rotation.col(1));
@@ -236,10 +236,10 @@ class DeformationGraph
             return residual;
         }
 
-        Eigen::VectorXd sparseResidualReg(const int numRows)
+        VectorXd_t sparseResidualReg(const int numRows)
         {
             //Now the residual
-            Eigen::VectorXd residual(numRows);
+            VectorXd_t residual(numRows);
 
             int lastRow = 0;
 
@@ -258,15 +258,15 @@ class DeformationGraph
             return residual;
         }
 
-        Eigen::VectorXd sparseResidualCons(const int numRows)
+        VectorXd_t sparseResidualCons(const int numRows)
         {
             //Now the residual
-            Eigen::VectorXd residual(numRows);
+            VectorXd_t residual(numRows);
 
             int lastRow = 0;
 
-            Eigen::Vector3d position;
-            Eigen::Vector3d normal;
+            Vector3d_t position;
+            Vector3d_t normal;
             for(unsigned int l = 0; l < constraints.size(); l++)
             {
                 //Compute desired position for cost

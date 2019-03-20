@@ -54,6 +54,7 @@
 #ifndef COLOR_VOLUME_H_
 #define COLOR_VOLUME_H_
 
+#include "../utils/types.hpp"
 #include "cuda/containers/device_array.hpp"
 #include <Eigen/Core>
 
@@ -87,7 +88,7 @@ private:
   Eigen::Vector3i resolution_;
 
   /** \brief Volume size in meters */
-  Eigen::Vector3f volume_size_;
+  Vector3_t volume_size_;
 
   /** \brief color volume data */
   DeviceArray2D<int> color_volume_;

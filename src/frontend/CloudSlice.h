@@ -43,8 +43,8 @@ class CloudSlice
 		CloudSlice(pcl::PointCloud<pcl::PointXYZRGB> * cloud,
 				   Dimension dimension,
 				   Odometry odometry,
-				   Eigen::Vector3f & cameraTranslation,
-				   Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & cameraRotation,
+				   Vector3_t & cameraTranslation,
+				   Matrix3_t & cameraRotation,
 				   uint64_t utime,
 				   uint64_t lagTime,
 				   unsigned char * rgbImage,
@@ -112,8 +112,8 @@ class CloudSlice
 		pcl::PointCloud<pcl::PointXYZRGBNormal> * processedCloud;
 		Dimension dimension;
 		Odometry odometry;
-		Eigen::Vector3f cameraTranslation;
-		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> cameraRotation;
+		Vector3_t cameraTranslation;
+		Matrix3_t cameraRotation;
 		ThreadMutexObject<bool> poseIsam;
 		uint64_t utime;
 		uint64_t lagTime;

@@ -63,9 +63,9 @@ DepthCamera::~DepthCamera()
 {
 }
 
-void DepthCamera::projectInlierMatches(std::vector<std::pair<int2, int2> > inliers,
-                                       std::vector<Eigen::Vector3d> & inl1,
-                                       std::vector<Eigen::Vector3d> & inl2,
+void DepthCamera::projectInlierMatches(const std::vector<std::pair<int2, int2> >& inliers,
+                                       vectors3d_t & inl1,
+                                       vectors3d_t & inl2,
                                        unsigned short * depth1,
                                        unsigned short * depth2)
 {
@@ -79,11 +79,11 @@ void DepthCamera::projectInlierMatches(std::vector<std::pair<int2, int2> > inlie
             continue;
         }
 
-        Eigen::Vector3d firstProj(depthFirst * (inliers.at(i).first.x - principalPoint.x) * (1 / depthIntrinsics->at<double>(0, 0)),
+        Vector3d_t firstProj(depthFirst * (inliers.at(i).first.x - principalPoint.x) * (1 / depthIntrinsics->at<double>(0, 0)),
                                   depthFirst * (inliers.at(i).first.y - principalPoint.y) * (1 / depthIntrinsics->at<double>(1, 1)),
                                   depthFirst);
 
-        Eigen::Vector3d secondProj(depthSecond * (inliers.at(i).second.x - principalPoint.x) * (1 / depthIntrinsics->at<double>(0, 0)),
+        Vector3d_t secondProj(depthSecond * (inliers.at(i).second.x - principalPoint.x) * (1 / depthIntrinsics->at<double>(0, 0)),
                                    depthSecond * (inliers.at(i).second.y - principalPoint.y) * (1 / depthIntrinsics->at<double>(1, 1)),
                                    depthSecond);
 
@@ -122,13 +122,13 @@ void DepthCamera::computeVertexMap(cv::Mat & depthMap, cv::Mat & vertexMap)
             }
             else
             {
-                Eigen::Vector4f vertex;
+                Vector4_t vertex;
                 vertex(0) = col * (float)depthRow[col];
                 vertex(1) = row * (float)depthRow[col];
                 vertex(2) = (float)depthRow[col];
                 vertex(3) = 1;
 
-                Eigen::Vector4f pixel;
+                Vector4_t pixel;
 
                 pixel = Kinv * vertex;
 

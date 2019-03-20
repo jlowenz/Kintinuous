@@ -54,6 +54,7 @@
 #ifndef TSDF_VOLUME_H_
 #define TSDF_VOLUME_H_
 
+#include "../utils/types.hpp"
 #include "cuda/containers/device_array.hpp"
 #include "cuda/internal.h"
 #include <Eigen/Core>
@@ -80,7 +81,7 @@ public:
     * \param[in] size size of tsdf volume in meters
     */
   void
-  setSize(const Eigen::Vector3f& size);
+  setSize(const Vector3_t& size);
 
   /** \brief Sets Tsdf truncation distance. Must be greater than 2 * volume_voxel_size
     * \param[in] distance TSDF truncation distance
@@ -93,7 +94,7 @@ public:
   data() const;
 
   /** \brief Returns volume size in meters */
-  const Eigen::Vector3f&
+  const Vector3_t&
   getSize() const;
 
   /** \brief Returns volume resolution */
@@ -101,7 +102,7 @@ public:
   getResolution() const;
 
   /** \brief Returns volume voxel size in meters */
-  const Eigen::Vector3f
+  const Vector3_t
   getVoxelSize() const;
 
   /** \brief Returns tsdf truncation distance in meters */
@@ -145,7 +146,7 @@ public:
 
 private:
   /** \brief tsdf volume size in meters */
-  Eigen::Vector3f size_;
+  Vector3_t size_;
 
   /** \brief tsdf volume resolution */
   Eigen::Vector3i resolution_;

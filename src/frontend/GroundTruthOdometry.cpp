@@ -18,9 +18,9 @@
 
 #include "GroundTruthOdometry.h"
 
-GroundTruthOdometry::GroundTruthOdometry(std::vector<Eigen::Vector3f> & tvecs_,
-                                         std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_,
-                                         std::map<uint64_t, Eigen::Isometry3f, std::less<int>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > & camera_trajectory,
+GroundTruthOdometry::GroundTruthOdometry(vectors3_t & tvecs_,
+                                         matrices3_t & rmats_,
+                                         std::map<uint64_t, Eigen::Isometry3f, std::less<uint64_t>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > & camera_trajectory,
                                          uint64_t & last_utime)
  : tvecs_(tvecs_),
    rmats_(rmats_),
@@ -40,8 +40,8 @@ void GroundTruthOdometry::reset()
     return;
 }
 
-CloudSlice::Odometry GroundTruthOdometry::getIncrementalTransformation(Eigen::Vector3f & trans,
-                                                                       Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rot,
+CloudSlice::Odometry GroundTruthOdometry::getIncrementalTransformation(Vector3_t & trans,
+                                                                       Matrix3_t & rot,
                                                                        const DeviceArray2D<unsigned short> & depth,
                                                                        const DeviceArray2D<PixelRGB> & image,
                                                                        uint64_t timestamp,
@@ -50,8 +50,8 @@ CloudSlice::Odometry GroundTruthOdometry::getIncrementalTransformation(Eigen::Ve
 {
     if (last_utime != 0 && !camera_trajectory.empty())
     {
-        Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev = rmats_[rmats_.size() - 1];
-        Eigen::Vector3f tprev = tvecs_[tvecs_.size() - 1];
+        Matrix3_t Rprev = rmats_[rmats_.size() - 1];
+        Vector3_t tprev = tvecs_[tvecs_.size() - 1];
 
         Eigen::Isometry3f delta = camera_trajectory[last_utime].inverse() * camera_trajectory[timestamp];
 
@@ -60,7 +60,7 @@ CloudSlice::Odometry GroundTruthOdometry::getIncrementalTransformation(Eigen::Ve
         currentTsdf.rotate(Rprev);
         currentTsdf.translation() = tprev;
 
-        Eigen::Matrix4f M;
+        Matrix4_t M;
         M <<  0,  0, 1, 0,
              -1,  0, 0, 0,
               0, -1, 0, 0,
@@ -75,9 +75,9 @@ CloudSlice::Odometry GroundTruthOdometry::getIncrementalTransformation(Eigen::Ve
     return CloudSlice::GROUNDTRUTH;
 }
 
-Eigen::MatrixXd GroundTruthOdometry::getCovariance()
+MatrixXd_t GroundTruthOdometry::getCovariance()
 {
-    Eigen::MatrixXd cov(6, 6);
+    MatrixXd_t cov(6, 6);
     cov.setIdentity();
     cov(0, 0) = 0.1;
     cov(1, 1) = 0.1;
@@ -96,7 +96,7 @@ bool GroundTruthOdometry::preRun(unsigned char * rgbImage,
 
     if(!camera_trajectory.empty())
     {
-        std::map<uint64_t, Eigen::Isometry3f>::const_iterator it = camera_trajectory.find(timestamp);
+        std::map<uint64_t, Eigen::Isometry3f, std::less<uint64_t>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> >>::const_iterator it = camera_trajectory.find(timestamp);
         if (it == camera_trajectory.end())
         {
             return false;

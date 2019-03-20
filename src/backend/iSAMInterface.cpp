@@ -18,9 +18,11 @@
 
 #include "iSAMInterface.h"
 
+namespace isam { const int Pose3d::dim; }
+
 iSAMInterface::iSAMInterface()
 {
-    Eigen::Matrix4f M;
+    Matrix4_t M;
     M << 0,  0, 1, 0,
          -1, 0, 0, 0,
          0, -1, 0, 0,
@@ -43,10 +45,10 @@ iSAMInterface::~iSAMInterface()
 
 void iSAMInterface::addCameraCameraConstraint(uint64_t time1,
                                               uint64_t time2,
-                                              const Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & Rprev,
-                                              const Eigen::Vector3f & tprev,
-                                              const Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & Rcurr,
-                                              const Eigen::Vector3f & tcurr)
+                                              const Matrix3_t & Rprev,
+                                              const Vector3_t & tprev,
+                                              const Matrix3_t & Rcurr,
+                                              const Vector3_t & tcurr)
 {
     std::pair<uint64_t, uint64_t> constraint(time1, time2);
 
@@ -57,32 +59,42 @@ void iSAMInterface::addCameraCameraConstraint(uint64_t time1,
 
     cameraCameraConstraints[constraint] = true;
 
-    Eigen::Matrix4f prev = Eigen::Matrix4f::Identity();
+    std::cout << "Rprev\n" << Rprev << std::endl;
+    std::cout << "tprev\n" << tprev << std::endl;
+    std::cout << "Rcurr\n" << Rcurr << std::endl;
+    std::cout << "tcurr\n" << tcurr << std::endl;
+    
+    Matrix4_t prev = Matrix4_t::Identity();
     prev.topLeftCorner(3,3) = Rprev;
     prev.topRightCorner(3,1) = tprev;
 
-    Eigen::Matrix4f curr = Eigen::Matrix4f::Identity();
+    Matrix4_t curr = Matrix4_t::Identity();
     curr.topLeftCorner(3,3) = Rcurr;
     curr.topRightCorner(3,1) = tcurr;
 
-    Eigen::Matrix4f eigenDelta = prev.inverse() * curr;
+    std::cout << "prev:\n" << prev << std::endl;
+    std::cout << "curr:\n" << curr << std::endl;
+    
+    Matrix4_t eigenDelta = prev.inverse() * curr;
 
-    Eigen::Matrix4f d = transformation2isam * eigenDelta * transformation2isam.inverse();
+    Matrix4_t d = transformation2isam * eigenDelta * transformation2isam.inverse();
 
-    Eigen::Matrix3f rot = d.topLeftCorner(3,3);
-    Eigen::Quaternionf quat(rot);
-    Eigen::Vector3f trans = d.topRightCorner(3,1);
+    Matrix3_t rot = d.topLeftCorner(3,3);
+    Quaternion_t quat(rot);
+    Vector3_t trans = d.topRightCorner(3,1);
 
     isam::Pose3d delta(isam::Point3d(trans(0), trans(1), trans(2)), Eigen::Quaterniond(quat.w(), quat.x(), quat.y(), quat.z()));
 
     isam::Pose3d_Node* node1 = cameraNode(time1);
-    isam::Pose3d_Node* node2 = cameraNode(time2);
-    isam::Pose3d_Pose3d_Factor * factor = new isam::Pose3d_Pose3d_Factor(node1, node2, delta, isam::Covariance(Eigen::MatrixXd::Identity(6, 6) * 1e-3));
+    isam::Pose3d_Node* node2 = cameraNode(time2);    
+    std::cout << "node1/2: " << node1 << "/" << node2 << std::endl;
+    std::cout << "delta:   " << delta << std::endl;
+    isam::Pose3d_Pose3d_Factor * factor = new isam::Pose3d_Pose3d_Factor(node1, node2, delta, isam::Covariance(MatrixXd_t::Identity(6, 6) * 1e-3));
 
     _slam->add_factor(factor);
 }
 
-isam::Pose3d_Pose3d_Factor * iSAMInterface::addLoopConstraint(uint64_t time1, uint64_t time2, Eigen::Matrix4d & loopConstraint)
+isam::Pose3d_Pose3d_Factor * iSAMInterface::addLoopConstraint(uint64_t time1, uint64_t time2, Matrix4d_t & loopConstraint)
 {
     std::pair<uint64_t, uint64_t> constraint(time1, time2);
 
@@ -97,7 +109,7 @@ isam::Pose3d_Pose3d_Factor * iSAMInterface::addLoopConstraint(uint64_t time1, ui
     isam::Pose3d_Node * nodeTime1 = cameraNode(time1);
     isam::Pose3d_Node * nodeTime2 = cameraNode(time2);
 
-    isam::Pose3d_Pose3d_Factor * factor = new isam::Pose3d_Pose3d_Factor(nodeTime1, nodeTime2, delta, isam::Covariance(Eigen::MatrixXd::Identity(6, 6) * 1e-3));
+    isam::Pose3d_Pose3d_Factor * factor = new isam::Pose3d_Pose3d_Factor(nodeTime1, nodeTime2, delta, isam::Covariance(MatrixXd_t::Identity(6, 6) * 1e-3));
 
     _slam->add_factor(factor);
 
@@ -121,7 +133,7 @@ isam::Pose3d_Node * iSAMInterface::cameraNode(uint64_t time)
             // if first node, initialize
             isam::Pose3d_Factor * prior = new isam::Pose3d_Factor(new_pose_node,
                                                                   isam::Pose3d(),
-                                                                  isam::Covariance(0.001 * Eigen::Matrix<double, 6, 6>::Identity()));
+                                                                  isam::Covariance(0.001 * Matrix6d_t::Identity()));
             _slam->add_factor(prior);
         }
 
@@ -144,13 +156,13 @@ const std::list<isam::Factor* > & iSAMInterface::getFactors()
     return _slam->get_factors();
 }
 
-void iSAMInterface::getCameraPositions(std::vector<std::pair<uint64_t, Eigen::Vector3d> > & positions)
+void iSAMInterface::getCameraPositions(cam_position_t & positions)
 {
-    std::pair<uint64_t, Eigen::Vector3d> next;
+    std::pair<uint64_t, Vector3d_t> next;
 
     for(std::map<uint64_t, isam::Pose3d_Node *>::iterator it = _camera_nodes.begin(); it != _camera_nodes.end(); ++it)
     {
-        Eigen::Vector3d current = it->second->value().trans().vector();
+        Vector3d_t current = it->second->value().trans().vector();
 
         next.first = it->first;
         next.second(0) = -current(1);
@@ -166,13 +178,13 @@ void iSAMInterface::removeFactor(isam::Pose3d_Pose3d_Factor * factor)
     _slam->remove_factor(factor);
 }
 
-void iSAMInterface::getCameraPoses(std::vector<std::pair<uint64_t, Eigen::Matrix4f> > & poses)
+void iSAMInterface::getCameraPoses(cam_pose_t & poses)
 {
-    std::pair<uint64_t, Eigen::Matrix4f> next;
+    std::pair<uint64_t, Matrix4_t> next;
 
     for(std::map<uint64_t, isam::Pose3d_Node *>::iterator it = _camera_nodes.begin(); it != _camera_nodes.end(); ++it)
     {
-        Eigen::Matrix4f inIsam = it->second->value().wTo().cast<float>();
+        Matrix4_t inIsam = it->second->value().wTo().cast<float>();
 
         next.first = it->first;
         next.second = transformation2isam.inverse() * inIsam * transformation2isam;
@@ -181,9 +193,9 @@ void iSAMInterface::getCameraPoses(std::vector<std::pair<uint64_t, Eigen::Matrix
     }
 }
 
-Eigen::Matrix4f iSAMInterface::getCameraPose(uint64_t id)
+Matrix4_t iSAMInterface::getCameraPose(uint64_t id)
 {
-    Eigen::Matrix4f inIsam = _camera_nodes[id]->value().wTo().cast<float>();
-    Eigen::Matrix4f inWorld = transformation2isam.inverse() * inIsam * transformation2isam;
+    Matrix4_t inIsam = _camera_nodes[id]->value().wTo().cast<float>();
+    Matrix4_t inWorld = transformation2isam.inverse() * inIsam * transformation2isam;
     return inWorld;
 }

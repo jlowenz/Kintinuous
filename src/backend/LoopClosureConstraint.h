@@ -19,6 +19,7 @@
 #ifndef LOOPCLOSURECONSTRAINT_H_
 #define LOOPCLOSURECONSTRAINT_H_
 
+#include "../utils/types.hpp"
 #include <Eigen/Core>
 
 class LoopClosureConstraint
@@ -27,9 +28,9 @@ class LoopClosureConstraint
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
         LoopClosureConstraint(uint64_t time1,
                               uint64_t time2,
-                              Eigen::Matrix4f & constraint,
-                              std::vector<Eigen::Vector3d> & inliers1Proj,
-                              std::vector<Eigen::Vector3d> & inliers2Proj,
+                              Matrix4_t & constraint,
+                              vectors3d_t & inliers1Proj,
+                              vectors3d_t & inliers2Proj,
                               uint64_t lagTime)
          : time1(time1),
            time2(time2),
@@ -41,9 +42,9 @@ class LoopClosureConstraint
 
         uint64_t time1;
         uint64_t time2;
-        Eigen::Matrix4d constraint; //Expected to NOT be in iSAM basis
-        std::vector<Eigen::Vector3d> inliers1Proj;
-        std::vector<Eigen::Vector3d> inliers2Proj;
+        Matrix4d_t constraint; //Expected to NOT be in iSAM basis
+        vectors3d_t inliers1Proj;
+        vectors3d_t inliers2Proj;
         uint64_t lagTime;
 };
 

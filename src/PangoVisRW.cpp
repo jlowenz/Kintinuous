@@ -85,7 +85,7 @@ PangoVis::PangoVis(cv::Mat * depthIntrinsics)
     .AddDisplay(pangolin::Display("ModelImg"))
     .AddDisplay(pangolin::Display("Model"));
 
-  K = Eigen::Matrix3f::Identity();
+  K = Matrix3_t::Identity();
   K(0, 0) = depthIntrinsics->at<double>(0,0);
   K(1, 1) = depthIntrinsics->at<double>(1,1);
   K(0, 2) = depthIntrinsics->at<double>(0,2);
@@ -206,11 +206,11 @@ void PangoVis::processClouds()
 
     pose = threadPack.isamOffset.getValue() * threadPack.loopOffset.getValue() * threadPack.tracker->densePoseGraph.at(latestDensePoseIdCopy - 1).pose;
 
-    Eigen::Vector3f translation = pose.topRightCorner(3, 1);
+    Vector3_t translation = pose.topRightCorner(3, 1);
 
-    Eigen::Vector3f initialTrans = Eigen::Vector3f::Constant(Volume::get().getVolumeSize() * 0.5) - threadPack.tracker->getVolumeOffset();
+    Vector3_t initialTrans = Vector3_t::Constant(Volume::get().getVolumeSize() * 0.5) - threadPack.tracker->getVolumeOffset();
 
-    Eigen::Vector3f currentCubeTranslation = initialTrans;
+    Vector3_t currentCubeTranslation = initialTrans;
     currentCubeTranslation(0) += std::floor(translation(0) / voxelSizeMeters.x) * voxelSizeMeters.x;
     currentCubeTranslation(1) += std::floor(translation(1) / voxelSizeMeters.y) * voxelSizeMeters.y;
     currentCubeTranslation(2) += std::floor(translation(2) / voxelSizeMeters.z) * voxelSizeMeters.z;
@@ -219,14 +219,15 @@ void PangoVis::processClouds()
     if(volumeShifting)
     {
       tsdfCube.setEmpty();
-      tsdfCube.extend(currentCubeTranslation + Eigen::Vector3f::Constant(Volume::get().getVolumeSize() / 2.0f));
-      tsdfCube.extend(currentCubeTranslation - Eigen::Vector3f::Constant(Volume::get().getVolumeSize() / 2.0f));
+      tsdfCube.extend(currentCubeTranslation + Vector3_t::Constant(Volume::get().getVolumeSize() / 2.0f));
+      tsdfCube.extend(currentCubeTranslation - Vector3_t::Constant(Volume::get().getVolumeSize() / 2.0f));
     }
 
     pangolin::glDrawAlignedBox(tsdfCube);
 
     glColor3f(0, 1, 0);
-    pangolin::glDrawFrustum(Kinv, Resolution::get().width(), Resolution::get().height(), pose, 0.1f);
+    Eigen::Matrix4f pose_colmajor = pose;
+    pangolin::glDrawFrustum(Kinv, Resolution::get().width(), Resolution::get().height(), pose_colmajor, 0.1f);
     glColor3f(1, 1, 1);
   }
 
@@ -274,14 +275,14 @@ void PangoVis::processClouds()
       if(ConfigArgs::get().dynamicCube && !threadPack.cloudSlices.at(i)->poseIsam.getValue())
         break;
 
-      Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
+      Matrix4_t pose = Matrix4_t::Identity();
       pose.topLeftCorner(3, 3) = threadPack.cloudSlices.at(i)->cameraRotation;
       pose.topRightCorner(3, 1) = threadPack.cloudSlices.at(i)->cameraTranslation;
       poses.push_back(pose);
 
       if(i > 2)
       {
-        lines.push_back(std::pair<Eigen::Vector3f, Eigen::Vector3f>(threadPack.cloudSlices.at(i)->cameraTranslation,
+        lines.push_back(std::pair<Vector3_t, Vector3_t>(threadPack.cloudSlices.at(i)->cameraTranslation,
                                                                     threadPack.cloudSlices.at(i - 1)->cameraTranslation));
       }
     }
@@ -296,14 +297,14 @@ void PangoVis::processClouds()
 
       if(latestDrawnPoseCloudId > 1)
       {
-        Eigen::Matrix4f pose = Eigen::Matrix4f::Identity();
+        Matrix4_t pose = Matrix4_t::Identity();
         pose.topLeftCorner(3, 3) = threadPack.cloudSlices.at(latestDrawnPoseCloudId)->cameraRotation;
         pose.topRightCorner(3, 1) = threadPack.cloudSlices.at(latestDrawnPoseCloudId)->cameraTranslation;
         poses.push_back(pose);
 
         if(latestDrawnPoseCloudId > 2)
         {
-          lines.push_back(std::pair<Eigen::Vector3f, Eigen::Vector3f>(threadPack.cloudSlices.at(latestDrawnPoseCloudId)->cameraTranslation,
+          lines.push_back(std::pair<Vector3_t, Vector3_t>(threadPack.cloudSlices.at(latestDrawnPoseCloudId)->cameraTranslation,
                                                                       threadPack.cloudSlices.at(latestDrawnPoseCloudId - 1)->cameraTranslation));
         }
       }
@@ -438,7 +439,8 @@ void PangoVis::render()
   glColor3f(1, 1, 1);
   for(size_t i = 0; i < poses.size(); i++)
   {
-    pangolin::glDrawFrustum(Kinv, Resolution::get().width(), Resolution::get().height(), poses.at(i), 0.05f);
+    Eigen::Matrix4f pose_colmajor = poses.at(i);
+    pangolin::glDrawFrustum(Kinv, Resolution::get().width(), Resolution::get().height(), pose_colmajor, 0.05f);
   }
 
   glDisable(GL_DEPTH_TEST);
@@ -596,33 +598,33 @@ void PangoVis::handleInput()
   {
     pangolin::OpenGlMatrix mv;
 
-    Eigen::Matrix4f currPose = pose;
-    Eigen::Matrix3f currRot = currPose.topLeftCorner(3, 3);
+    Matrix4_t currPose = pose;
+    Matrix3_t currRot = currPose.topLeftCorner(3, 3);
 
-    Eigen::Quaternionf currQuat(currRot);
-    Eigen::Vector3f forwardVector(0, 0, 1);
-    Eigen::Vector3f upVector(0, -1, 0);
+    Quaternion_t currQuat(currRot);
+    Vector3_t forwardVector(0, 0, 1);
+    Vector3_t upVector(0, -1, 0);
 
-    Eigen::Vector3f forward = (currQuat * forwardVector).normalized();
-    Eigen::Vector3f up = (currQuat * upVector).normalized();
+    Vector3_t forward = (currQuat * forwardVector).normalized();
+    Vector3_t up = (currQuat * upVector).normalized();
 
-    Eigen::Vector3f eye(currPose(0, 3), currPose(1, 3), currPose(2, 3));
+    Vector3_t eye(currPose(0, 3), currPose(1, 3), currPose(2, 3));
 
     eye -= forward * 20;
 
-    Eigen::Vector3f at = eye + forward;
+    Vector3_t at = eye + forward;
 
-    Eigen::Vector3f z = (eye - at).normalized();  // Forward
-    Eigen::Vector3f x = up.cross(z).normalized(); // Right
-    Eigen::Vector3f y = z.cross(x);
+    Vector3_t z = (eye - at).normalized();  // Forward
+    Vector3_t x = up.cross(z).normalized(); // Right
+    Vector3_t y = z.cross(x);
 
-    Eigen::Matrix4d m;
+    Matrix4d_t m;
     m << x(0),  x(1),  x(2),  -(x.dot(eye)),
       y(0),  y(1),  y(2),  -(y.dot(eye)),
       z(0),  z(1),  z(2),  -(z.dot(eye)),
       0,     0,     0,              1;
 
-    memcpy(&mv.m[0], m.data(), sizeof(Eigen::Matrix4d));
+    memcpy(&mv.m[0], m.data(), sizeof(Matrix4d_t));
 
     s_cam.SetModelViewMatrix(mv);
   }

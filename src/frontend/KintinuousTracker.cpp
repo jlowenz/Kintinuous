@@ -89,7 +89,7 @@ KintinuousTracker::KintinuousTracker(cv::Mat * depthIntrinsics)
     intr.cx = depthIntrinsics->at<double>(0, 2);
     intr.cy = depthIntrinsics->at<double>(1, 2);
 
-    const Eigen::Vector3f volume_size = Eigen::Vector3f::Constant(Volume::get().getVolumeSize());
+    const Vector3_t volume_size = Vector3_t::Constant(Volume::get().getVolumeSize());
     const Eigen::Vector3i volume_resolution(VOLUME_X, VOLUME_Y, VOLUME_Z);
 
     tsdf_volume_ = new TsdfVolume(volume_resolution);
@@ -98,11 +98,11 @@ KintinuousTracker::KintinuousTracker(cv::Mat * depthIntrinsics)
 
     color_volume_ = new ColorVolume(*tsdf_volume_);
 
-    initialRotation = Eigen::Matrix3f::Identity();
+    initialRotation = Matrix3_t::Identity();
 
     if(ConfigArgs::get().staticMode || ConfigArgs::get().dynamicCube)
     {
-        volumeBasis = volume_size * 0.5f - Eigen::Vector3f(0, 0, (volume_size(2) * 0.5) + (ConfigArgs::get().staticMode ? 0.45 : 0));
+        volumeBasis = volume_size * 0.5f - Vector3_t(0, 0, (volume_size(2) * 0.5) + (ConfigArgs::get().staticMode ? 0.45 : 0));
     }
     else
     {
@@ -196,7 +196,7 @@ KintinuousTracker::~KintinuousTracker()
     delete tsdf_volume_;
 }
 
-void KintinuousTracker::outputPose(uint64_t & timestamp, Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & Rcurr)
+void KintinuousTracker::outputPose(uint64_t & timestamp, Matrix3_t & Rcurr)
 {
     std::string filename = ConfigArgs::get().saveFile;
     filename.append(".poses");
@@ -210,7 +210,7 @@ void KintinuousTracker::outputPose(uint64_t & timestamp, Eigen::Matrix<float, 3,
 
     file << strs.str() << currentGlobalCamera(0) << " " << currentGlobalCamera(1) << " " << currentGlobalCamera(2) << " ";
 
-    Eigen::Quaternionf currentCameraRotation(Rcurr);
+    Quaternion_t currentCameraRotation(Rcurr);
 
     file << currentCameraRotation.x() << " " << currentCameraRotation.y() << " " << currentCameraRotation.z() << " " << currentCameraRotation.w() << "\n";
 
@@ -225,7 +225,7 @@ void KintinuousTracker::loadTrajectory(const std::string & filename)
 
     double trajSum = 0.0;
     bool first = true;
-    Eigen::Vector3f lastT;
+    Vector3_t lastT;
 
     while (!file.eof())
     {
@@ -239,8 +239,8 @@ void KintinuousTracker::loadTrajectory(const std::string & filename)
 
         assert(n == 8);
 
-        Eigen::Quaternionf q(qw, qx, qy, qz);
-        Eigen::Vector3f t(x, y, z);
+        Quaternion_t q(qw, qx, qy, qz);
+        Vector3_t t(x, y, z);
 
         if(!first)
         {
@@ -273,14 +273,14 @@ void KintinuousTracker::reset()
     rmats_.push_back(initialRotation);
     tvecs_.push_back(volumeBasis);
 
-    Eigen::Vector3f initialTrans = volumeBasis;
+    Vector3_t initialTrans = volumeBasis;
     initialTrans(0) -= Volume::get().getVolumeSize() * 0.5;
     initialTrans(1) -= Volume::get().getVolumeSize() * 0.5;
     initialTrans(2) -= Volume::get().getVolumeSize() * 0.5;
 
     const float3 & voxelSizeMeters = Volume::get().getVoxelSizeMeters();
 
-    Eigen::Vector3f currentCameraTranslation = initialTrans;
+    Vector3_t currentCameraTranslation = initialTrans;
     currentCameraTranslation(0) += voxelWrap.x * voxelSizeMeters.x;
     currentCameraTranslation(1) += voxelWrap.y * voxelSizeMeters.y;
     currentCameraTranslation(2) += voxelWrap.z * voxelSizeMeters.z;
@@ -381,9 +381,9 @@ void KintinuousTracker::allocateBuffers()
     depthRawScaled_.create(Resolution::get().rows(), Resolution::get().cols());
 }
 
-void KintinuousTracker::repositionCube(Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & currentRotation)
+void KintinuousTracker::repositionCube(Matrix3_t & currentRotation)
 {
-    Eigen::Vector3f rotations = rodrigues2(currentRotation);
+    Vector3_t rotations = rodrigues2(currentRotation);
 
     float yRot = rotations(1);
 
@@ -391,14 +391,14 @@ void KintinuousTracker::repositionCube(Eigen::Matrix<float, 3, 3, Eigen::RowMajo
 
     float radius = Volume::get().getVolumeSize() * 0.5;
 
-    Eigen::Vector3f newPosition = volumeBasis;
+    Vector3_t newPosition = volumeBasis;
 
     newPosition(0) = radius * (cos(yRot + (PI / 2)) + 1.0f);
     newPosition(2) = radius * (sin(yRot - (PI / 2)) + 1.0f);
 
-    Eigen::Vector3f currentTranslation = (tvecs_.at(tvecs_.size() - 1) - newPosition);
+    Vector3_t currentTranslation = (tvecs_.at(tvecs_.size() - 1) - newPosition);
 
-    Eigen::Vector3f voxelSize = tsdf_volume_->getVoxelSize();
+    Vector3_t voxelSize = tsdf_volume_->getVoxelSize();
 
     const int thresh = parked ? ConfigArgs::get().staticMode ? VOLUME_X * 3 : VOLUME_X : ConfigArgs::get().voxelShift;
 
@@ -480,13 +480,13 @@ void KintinuousTracker::processFrame(const DeviceArray2D<unsigned short>& depth_
 
     if(global_time_ == 0)
     {
-        Eigen::Matrix<float, 3, 3, Eigen::RowMajor> init_Rcam = rmats_[rmats_.size() - 1];
-        Eigen::Vector3f   init_tcam = tvecs_[tvecs_.size() - 1];
+        Matrix3_t init_Rcam = rmats_[rmats_.size() - 1];
+        Vector3_t   init_tcam = tvecs_[tvecs_.size() - 1];
 
         Mat33&  device_Rcam = device_cast<Mat33> (init_Rcam);
         float3& device_tcam = device_cast<float3>(init_tcam);
 
-        Eigen::Matrix<float, 3, 3, Eigen::RowMajor> init_Rcam_inv = init_Rcam.inverse ();
+        Matrix3_t init_Rcam_inv = init_Rcam.inverse ();
         Mat33&   device_Rcam_inv = device_cast<Mat33> (init_Rcam_inv);
         float3 device_volume_size = device_cast<const float3>(tsdf_volume_->getSize());
 
@@ -527,7 +527,7 @@ void KintinuousTracker::processFrame(const DeviceArray2D<unsigned short>& depth_
         last_utime = timestamp;
         current_utime = timestamp;
 
-        Eigen::Matrix4f curr = Eigen::Matrix4f::Identity();
+        Matrix4_t curr = Matrix4_t::Identity();
         curr.topLeftCorner(3,3) = init_Rcam;
         curr.topRightCorner(3,1) = currentGlobalCamera;
 
@@ -556,10 +556,10 @@ void KintinuousTracker::processFrame(const DeviceArray2D<unsigned short>& depth_
         return;
     }
 
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev = rmats_[rmats_.size() - 1];
-    Eigen::Vector3f tprev = tvecs_[tvecs_.size() - 1];
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
-    Eigen::Vector3f tcurr = tprev;
+    Matrix3_t Rprev = rmats_[rmats_.size() - 1];
+    Vector3_t tprev = tvecs_[tvecs_.size() - 1];
+    Matrix3_t Rcurr = Rprev;
+    Vector3_t tcurr = tprev;
 
     TICK("Odometry");
     lastOdometry = odometryProvider->getIncrementalTransformation(tcurr,
@@ -578,7 +578,7 @@ void KintinuousTracker::processFrame(const DeviceArray2D<unsigned short>& depth_
     rmats_.push_back(Rcurr);
     tvecs_.push_back(tcurr);
 
-    Eigen::Vector3f initialTrans = volumeBasis;
+    Vector3_t initialTrans = volumeBasis;
     initialTrans(0) -= Volume::get().getVolumeSize() * 0.5;
     initialTrans(1) -= Volume::get().getVolumeSize() * 0.5;
     initialTrans(2) -= Volume::get().getVolumeSize() * 0.5;
@@ -624,14 +624,14 @@ void KintinuousTracker::processFrame(const DeviceArray2D<unsigned short>& depth_
     }
 
     float3 device_volume_size = device_cast<const float3> (tsdf_volume_->getSize());
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr_inv = Rcurr.inverse ();
+    Matrix3_t Rcurr_inv = Rcurr.inverse ();
     Mat33& device_Rcurr = device_cast<Mat33> (Rcurr);
     Mat33&  device_Rcurr_inv = device_cast<Mat33> (Rcurr_inv);
     float3& device_tcurr = device_cast<float3> (tcurr);
 
-    Eigen::Vector3f currentTranslation = (tvecs_.at(tvecs_.size() - 1) - volumeBasis);
+    Vector3_t currentTranslation = (tvecs_.at(tvecs_.size() - 1) - volumeBasis);
 
-    Eigen::Vector3f voxelSize = tsdf_volume_->getVoxelSize();
+    Vector3_t voxelSize = tsdf_volume_->getVoxelSize();
 
     const int thresh = parked ? ConfigArgs::get().staticMode ? std::numeric_limits<int>::max() : std::numeric_limits<int>::max() : ConfigArgs::get().voxelShift;
 
@@ -900,7 +900,7 @@ void KintinuousTracker::processFrame(const DeviceArray2D<unsigned short>& depth_
 
     ++global_time_;
 
-    Eigen::Matrix4f curr = Eigen::Matrix4f::Identity();
+    Matrix4_t curr = Matrix4_t::Identity();
     curr.topLeftCorner(3,3) = Rcurr;
     curr.topRightCorner(3,1) = currentGlobalCamera;
 
@@ -970,7 +970,7 @@ void KintinuousTracker::getImage()
 
 void KintinuousTracker::getModelDepth()
 {
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr_inv = rmats_.back().inverse();
+    Matrix3_t Rcurr_inv = rmats_.back().inverse();
     Mat33  device_Rcurr_inv = device_cast<Mat33> (Rcurr_inv);
     float3 device_tcurr = device_cast<float3>(tvecs_.back());
 
@@ -980,7 +980,7 @@ void KintinuousTracker::getModelDepth()
     modelDepth.download(modelDepthHost, cols);
 }
 
-Eigen::Vector3f KintinuousTracker::getVolumeOffset() const
+Vector3_t KintinuousTracker::getVolumeOffset() const
 {
     return volumeBasis;
 }
@@ -990,12 +990,12 @@ void KintinuousTracker::setParked(const bool park)
     parked = park;
 }
 
-Eigen::Vector3f KintinuousTracker::getLastTranslation() const
+Vector3_t KintinuousTracker::getLastTranslation() const
 {
     return tvecs_.at(tvecs_.size() - 1) - volumeBasis;
 }
 
-Eigen::Vector3f KintinuousTracker::getVoxelSize() const
+Vector3_t KintinuousTracker::getVoxelSize() const
 {
     return tsdf_volume_->getVoxelSize();
 }
@@ -1047,7 +1047,7 @@ void KintinuousTracker::finalise()
     cloudSignal.notify_all();
 }
 
-Eigen::Matrix<float, 3, 3, Eigen::RowMajor> KintinuousTracker::getLastRotation() const
+Matrix3_t KintinuousTracker::getLastRotation() const
 {
     return rmats_.at(rmats_.size() - 1);
 }
@@ -1157,7 +1157,7 @@ void KintinuousTracker::mutexOutCloudBuffer(float3 & device_tcurr,
                                             int3 voxelTrans,
                                             PlaceRecognitionInput * placeRecognitionFrame)
 {
-	Eigen::Vector3f voxelSize = tsdf_volume_->getVoxelSize();
+	Vector3_t voxelSize = tsdf_volume_->getVoxelSize();
 
 	pcl::PointCloud<pcl::PointXYZRGB> * newCloud = 0;
 
@@ -1167,7 +1167,7 @@ void KintinuousTracker::mutexOutCloudBuffer(float3 & device_tcurr,
 
 	boost::mutex::scoped_lock lock(cloudMutex);
 
-	Eigen::Vector3f voxelTransSize;
+	Vector3_t voxelTransSize;
 	voxelTransSize(0) = voxelSize(0) * voxelTrans.x;
 	voxelTransSize(1) = voxelSize(1) * voxelTrans.y;
 	voxelTransSize(2) = voxelSize(2) * voxelTrans.z;
@@ -1207,10 +1207,10 @@ void KintinuousTracker::mutexOutCloudBuffer(float3 & device_tcurr,
 	device_tcurr.z -= voxelTransSize(2);
 }
 
-Eigen::Vector3f KintinuousTracker::rodrigues2(const Eigen::Matrix3f& matrix)
+Vector3_t KintinuousTracker::rodrigues2(const Eigen::Matrix3f& matrix)
 {
-    Eigen::JacobiSVD<Eigen::Matrix3f> svd(matrix, Eigen::ComputeFullV | Eigen::ComputeFullU);
-    Eigen::Matrix3f R = svd.matrixU() * svd.matrixV().transpose();
+    Eigen::JacobiSVD<Matrix3_t> svd(matrix, Eigen::ComputeFullV | Eigen::ComputeFullU);
+    Matrix3_t R = svd.matrixU() * svd.matrixV().transpose();
 
     double rx = R(2, 1) - R(1, 2);
     double ry = R(0, 2) - R(2, 0);
@@ -1251,5 +1251,5 @@ Eigen::Vector3f KintinuousTracker::rodrigues2(const Eigen::Matrix3f& matrix)
         vth *= theta;
         rx *= vth; ry *= vth; rz *= vth;
     }
-    return Eigen::Vector3d(rx, ry, rz).cast<float>();
+    return Vector3d_t(rx, ry, rz).cast<float>();
 }

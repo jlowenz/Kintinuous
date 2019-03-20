@@ -180,15 +180,15 @@ void PlaceRecognition::processLoopClosureDetection(int matchId)
     {
         float score = 0;
 
-        Eigen::Matrix4d T;
+        Matrix4d_t T;
         T.topLeftCorner(3,3) = pose.rot().wRo();
         T.col(3).head(3) << pose.x(), pose.y(), pose.z();
         T.row(3) << 0., 0., 0., 1.;
 
-        Eigen::Matrix4f bootstrap = T.cast<float>().inverse();
+        Matrix4_t bootstrap = T.cast<float>().inverse();
 
         TICK("LoopConstraint");
-        Eigen::Matrix4f icpTrans = icpDepthFrames(bootstrap,
+        Matrix4_t icpTrans = icpDepthFrames(bootstrap,
                                                   (unsigned short *)depthMapOld->data,
                                                   (unsigned short *)depthMapNew->data,
                                                   score);
@@ -198,7 +198,7 @@ void PlaceRecognition::processLoopClosureDetection(int matchId)
             uint64_t time1 = threadPack.tracker->placeRecognitionBuffer[latestProcessedFrame].utime;
             uint64_t time2 = threadPack.tracker->placeRecognitionBuffer[matchId].utime;
 
-            std::vector<Eigen::Vector3d> inliers1Proj, inliers2Proj;
+            vectors3d_t inliers1Proj, inliers2Proj;
 
             depthCamera->projectInlierMatches(inliers,
                                               inliers1Proj,
@@ -235,7 +235,7 @@ void PlaceRecognition::processLoopClosureDetection(int matchId)
     delete pnpSolver;
 }
 
-Eigen::Matrix4f PlaceRecognition::icpDepthFrames(Eigen::Matrix4f & bootstrap, unsigned short * frame1, unsigned short * frame2, float & score)
+Matrix4_t PlaceRecognition::icpDepthFrames(Matrix4_t & bootstrap, unsigned short * frame1, unsigned short * frame2, float & score)
 {
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOne = depthCamera->convertToXYZPointCloud(frame1);
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloudTwo = depthCamera->convertToXYZPointCloud(frame2);
@@ -268,7 +268,7 @@ Eigen::Matrix4f PlaceRecognition::icpDepthFrames(Eigen::Matrix4f & bootstrap, un
     std::cout << "score: " << icp.getFitnessScore() << ", ";
     std::cout.flush();
 
-    Eigen::Matrix4f d = icp.getFinalTransformation() * bootstrap;
+    Matrix4_t d = icp.getFinalTransformation() * bootstrap;
 
     score = icp.getFitnessScore();
 

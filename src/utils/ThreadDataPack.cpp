@@ -47,10 +47,14 @@ ThreadDataPack::getFrontend()
   return tracker;
 }
 
-
 void 
 ThreadDataPack::reset()
 {
+  Matrix4_t I;
+  I = Matrix4_t::Identity();
+  loopOffset.assignValue(I);
+  isamOffset.assignValue(I);
+
   //We only delete this because the first item is the initial pose slice
   //created by the CloudSliceProcessor, the rest of the pointers are owned
   //by the KintinuousTracker and dealt with there
@@ -98,8 +102,6 @@ ThreadDataPack::reset()
   poolLooped.assignValue(false);
   limit.assignValue(true);
   incMeshLooped.assignValue(false);
-  loopOffset.assignValue(Eigen::Matrix4f::Identity());
-  isamOffset.assignValue(Eigen::Matrix4f::Identity());
   lastLoopTime.assignValue(0);
   readyForLoop.assignValue(true);
 

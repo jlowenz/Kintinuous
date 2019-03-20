@@ -19,6 +19,7 @@
 #ifndef PLACERECOGNITION_H_
 #define PLACERECOGNITION_H_
 
+#include "../utils/types.hpp"
 #include "../frontend/Volume.h"
 #include "../utils/ThreadObject.h"
 #include "Surf3DTools.h"
@@ -49,7 +50,7 @@ class PlaceRecognition : public ThreadObject
 
         void processLoopClosureDetection(int matchId);
 
-        Eigen::Matrix4f icpDepthFrames(Eigen::Matrix4f & bootstrap, unsigned short * frame1, unsigned short * frame2, float & score);
+        Matrix4_t icpDepthFrames(Matrix4_t & bootstrap, unsigned short * frame1, unsigned short * frame2, float & score);
 
         int latestProcessedFrame;
         DBowInterfaceSurf * dbowInterface;

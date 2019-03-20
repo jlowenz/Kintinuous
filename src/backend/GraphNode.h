@@ -19,6 +19,7 @@
 #ifndef GRAPHNODE_H_
 #define GRAPHNODE_H_
 
+#include "../utils/types.hpp"
 #include <Eigen/Dense>
 
 class GraphNode
@@ -29,9 +30,9 @@ class GraphNode
         {}
 
         int id;
-        Eigen::Vector3d position;
-        Eigen::Matrix3d rotation;
-        Eigen::Vector3d translation;
+        Vector3d_t position;
+        Matrix3d_t rotation;
+        Vector3d_t translation;
         std::vector<GraphNode *> neighbours;
 };
 

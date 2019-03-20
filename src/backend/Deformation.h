@@ -22,6 +22,7 @@
 
 #include "../frontend/Volume.h"
 #include "../utils/ThreadObject.h"
+#include "../utils/types.hpp"
 
 #include <pcl/visualization/pcl_visualizer.h>
 #include <vector>

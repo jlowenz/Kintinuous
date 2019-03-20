@@ -63,8 +63,8 @@ bool inline CloudSliceProcessor::process()
       return true;
     }
 
-		Eigen::Matrix<float, 3, 3, Eigen::RowMajor> lastRotation = threadPack.tracker->getLastRotation();
-		Eigen::Vector3f lastTranslation = threadPack.tracker->getLastTranslation();
+		Matrix3_t lastRotation = threadPack.tracker->getLastRotation();
+		Vector3_t lastTranslation = threadPack.tracker->getLastTranslation();
 
 		threadPack.cloudSlices.push_back(new CloudSlice(new pcl::PointCloud<pcl::PointXYZRGB>(),
                                                     CloudSlice::FIRST,

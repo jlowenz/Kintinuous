@@ -23,54 +23,59 @@
 #include <assert.h>
 #include "ThreadDataPack.h"
 #include "Stopwatch.h"
+#include <Eigen/Core>
 
 class ThreadObject
 {
- public:
- ThreadObject(std::string threadIdentifier)
-   : threadPack(ThreadDataPack::get()),
-    threadIdentifier(threadIdentifier)
-    {
-      //Heartbeat
-      Stopwatch::get().pulse(threadIdentifier);
-      Stopwatch::get().sendAll();
-      haltSignal.assignValue(false);
-      isRunning.assignValue(false);
-      lagTime.assignValue(0);
-    }
+public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  
+  ThreadObject(const std::string& threadIdentifier)
+    : tpp_(ThreadDataPack::getp()),
+      threadPack(*tpp_),
+      threadIdentifier(threadIdentifier)
+  {
+    //Heartbeat
+    Stopwatch::get().pulse(threadIdentifier);
+    Stopwatch::get().sendAll();
+    haltSignal.assignValue(false);
+    isRunning.assignValue(false);
+    lagTime.assignValue(0);
+  }
 
   virtual ~ThreadObject()
-    {}
+  {}
 
   virtual void reset()
   {}
 
-  void stop()
+  virtual void stop()
   {
     std::cout << "Stopping " << threadIdentifier << std::endl;
     haltSignal.assignValue(true);
   }
 
-  void start()
+  virtual void start()
   {
     haltSignal.assignValue(false);
     run();
   }
 
-  std::string getThreadIdentifier()
-    {
-      return threadIdentifier;
-    }
+  virtual std::string getThreadIdentifier()
+  {
+    return threadIdentifier;
+  }
 
   bool running()
   {
     return isRunning.getValue();
   }
 
+  ThreadDataPack* tpp_;
   ThreadDataPack & threadPack;
   ThreadMutexObject<uint64_t> lagTime;
 
- protected:
+protected:
   void run()
   {
     std::cout << threadIdentifier << " started" << std::endl;
@@ -78,9 +83,9 @@ class ThreadObject
     isRunning.assignValue(true);
 
     while(process() && !haltSignal.getValue())
-      {
-        Stopwatch::get().sendAll();
-      }
+    {
+      Stopwatch::get().sendAll();
+    }
 
     isRunning.assignValue(false);
 

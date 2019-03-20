@@ -36,7 +36,7 @@ void CholeskyDecomp::freeFactor()
     L = 0;
 }
 
-Eigen::VectorXd CholeskyDecomp::solve(const Jacobian & jacobian, const Eigen::VectorXd & residual, const bool firstRun)
+VectorXd_t CholeskyDecomp::solve(const Jacobian & jacobian, const VectorXd_t & residual, const bool firstRun)
 {
     cholmod_sparse * At = cholmod_allocate_sparse(jacobian.cols(), jacobian.rows.size(), jacobian.nonZero(), true, true, 0, CHOLMOD_REAL, &Common);
 
@@ -88,7 +88,7 @@ Eigen::VectorXd CholeskyDecomp::solve(const Jacobian & jacobian, const Eigen::Ve
 
     cholmod_dense* delta_cm = cholmod_solve(CHOLMOD_Lt, L_factor, rhs, &Common);
 
-    Eigen::VectorXd delta(rhs->nrow);
+    VectorXd_t delta(rhs->nrow);
 
     for(size_t i = 0; i < At->nrow; i++)
     {

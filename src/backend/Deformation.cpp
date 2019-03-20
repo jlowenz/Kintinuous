@@ -36,19 +36,19 @@ Deformation::~Deformation()
     std::ofstream file;
     file.open(filename.c_str(), std::fstream::out);
 
-    std::vector<std::pair<uint64_t, Eigen::Matrix4f> > newPoseGraph;
+    cam_pose_t newPoseGraph;
     iSAM->getCameraPoses(newPoseGraph);
 
     for(unsigned int i = 0; i < newPoseGraph.size(); i++)
     {
         file << std::setprecision(6) << std::fixed << (double)newPoseGraph.at(i).first / 1000000.0 << " ";
 
-        Eigen::Vector3f trans = newPoseGraph.at(i).second.topRightCorner(3, 1);
-        Eigen::Matrix3f rot = newPoseGraph.at(i).second.topLeftCorner(3, 3);
+        Vector3_t trans = newPoseGraph.at(i).second.topRightCorner(3, 1);
+        Matrix3_t rot = newPoseGraph.at(i).second.topLeftCorner(3, 3);
 
         file << trans(0) << " " << trans(1) << " " << trans(2) << " ";
 
-        Eigen::Quaternionf currentCameraRotation(rot);
+        Quaternion_t currentCameraRotation(rot);
 
         file << currentCameraRotation.x() << " " << currentCameraRotation.y() << " " << currentCameraRotation.z() << " " << currentCameraRotation.w() << "\n";
     }
@@ -176,22 +176,22 @@ void Deformation::addCameraLoop()
 
     for(int i = latestProcessedLoop; i < latestLoopIdCopy; i++)
     {
-        std::vector<std::pair<uint64_t, Eigen::Vector3d> > prevPoseGraph;
+        cam_position_t prevPoseGraph;
 
         iSAM->getCameraPositions(prevPoseGraph);
 
         pcl::PointXYZRGBNormal newPoint;
         int originalPointPool = threadPack.pointPool->size();
 
-        Eigen::Vector4d point(0, 0, 0, 1);
-        Eigen::Vector4d transPoint(0, 0, 0, 1);
-        Eigen::Vector3d transPoint3d(0, 0, 0);
+        Vector4d_t point(0, 0, 0, 1);
+        Vector4d_t transPoint(0, 0, 0, 1);
+        Vector3d_t transPoint3d(0, 0, 0);
 
         boost::mutex::scoped_lock lock(threadPack.poolMutex);
 
         for(int i = 0; i < latestLoopIdCopy; i++)
         {
-            Eigen::Matrix4d camPose = iSAM->getCameraPose(threadPack.loopClosureConstraints.at(i)->time1).cast<double>();
+            Matrix4d_t camPose = iSAM->getCameraPose(threadPack.loopClosureConstraints.at(i)->time1).cast<double>();
 
             for(unsigned int j = 0; j < threadPack.loopClosureConstraints.at(i)->inliers1Proj.size(); j++)
             {
@@ -230,7 +230,7 @@ void Deformation::addCameraLoop()
             }
         }
 
-        Eigen::Matrix4f prevPose = iSAM->getCameraPose(prevPoseGraph.back().first);
+        Matrix4_t prevPose = iSAM->getCameraPose(prevPoseGraph.back().first);
 
         std::map<uint64_t, int> cameraPoseMap;
 
@@ -267,7 +267,7 @@ void Deformation::addCameraLoop()
 
             deformationGraph->appendVertices(&vertexTimes, originalPointPool);
 
-            std::vector<std::pair<uint64_t, Eigen::Vector3d> > newPoseGraph;
+            cam_position_t newPoseGraph;
 
             iSAM->getCameraPositions(newPoseGraph);
 
@@ -276,14 +276,14 @@ void Deformation::addCameraLoop()
                 deformationGraph->addConstraint(cameraPoseMap[newPoseGraph.at(i).first], newPoseGraph.at(i).second);
             }
 
-            Eigen::Matrix4f nextPose = iSAM->getCameraPose(prevPoseGraph.back().first);
+            Matrix4_t nextPose = iSAM->getCameraPose(prevPoseGraph.back().first);
 
             threadPack.loopOffset.assignValue(threadPack.loopOffset.getValue() * (nextPose * prevPose.inverse()));
 
             int count = 0;
             for(int i = 0; i < latestLoopIdCopy; i++)
             {
-                Eigen::Matrix4d camPose = iSAM->getCameraPose(threadPack.loopClosureConstraints.at(i)->time1).cast<double>();
+                Matrix4d_t camPose = iSAM->getCameraPose(threadPack.loopClosureConstraints.at(i)->time1).cast<double>();
 
                 for(unsigned int j = 0; j < threadPack.loopClosureConstraints.at(i)->inliers1Proj.size(); j++)
                 {
@@ -368,12 +368,12 @@ void Deformation::addVertices()
                                  threadPack.cloudSlices.at(i)->processedCloud->begin(),
                                  threadPack.cloudSlices.at(i)->processedCloud->end());
 
-                Eigen::Matrix4f rawTransform = Eigen::Matrix4f::Identity();
+                Matrix4_t rawTransform = Matrix4_t::Identity();
 
                 rawTransform.topLeftCorner(3, 3) = threadPack.cloudSlices.at(i)->cameraRotation;
                 rawTransform.topRightCorner(3, 1) = threadPack.cloudSlices.at(i)->cameraTranslation;
 
-                Eigen::Matrix4f relativeTransform = iSAM->getCameraPose(threadPack.cloudSlices.at(i)->utime) * rawTransform.inverse();
+                Matrix4_t relativeTransform = iSAM->getCameraPose(threadPack.cloudSlices.at(i)->utime) * rawTransform.inverse();
 
                 pcl::transformPointCloud(tempCloud, tempCloud, relativeTransform);
 
@@ -432,12 +432,12 @@ void Deformation::addVertices()
                                  sourceCloud->begin(),
                                  sourceCloud->end());
 
-                Eigen::Matrix4f rawTransform = Eigen::Matrix4f::Identity();
+                Matrix4_t rawTransform = Matrix4_t::Identity();
 
                 rawTransform.topLeftCorner(3, 3) = threadPack.cloudSlices.at(i)->cameraRotation;
                 rawTransform.topRightCorner(3, 1) = threadPack.cloudSlices.at(i)->cameraTranslation;
 
-                Eigen::Matrix4f relativeTransform = iSAM->getCameraPose(threadPack.cloudSlices.at(i)->utime) * rawTransform.inverse();
+                Matrix4_t relativeTransform = iSAM->getCameraPose(threadPack.cloudSlices.at(i)->utime) * rawTransform.inverse();
 
                 pcl::transformPointCloud(tempCloud, tempCloud, relativeTransform);
 
@@ -463,7 +463,7 @@ void Deformation::addVertices()
         return;
     }
 
-    std::vector<std::pair<uint64_t, Eigen::Vector3d> > prevPoseGraph;
+    cam_position_t prevPoseGraph;
     iSAM->getCameraPositions(prevPoseGraph);
 
     const unsigned int k = 4;
@@ -484,7 +484,7 @@ void Deformation::addVertices()
         pcl::PointXYZRGBNormal newPoint;
         int originalPointPool = threadPack.pointPool->size();
 
-        std::vector<std::pair<uint64_t, Eigen::Vector3d> > prevPoseGraph;
+        cam_position_t prevPoseGraph;
         iSAM->getCameraPositions(prevPoseGraph);
 
         for(unsigned int i = 0; i < prevPoseGraph.size(); i++)
@@ -557,11 +557,11 @@ bool inline Deformation::process()
     {
         for(int i = 0; i < latestProcessedPose; i++)
         {
-            Eigen::Matrix4f prevPose = Eigen::Matrix4f::Identity();
+            Matrix4_t prevPose = Matrix4_t::Identity();
             prevPose.topLeftCorner(3, 3) = threadPack.cloudSlices.at(i)->cameraRotation;
             prevPose.topRightCorner(3, 1) = threadPack.cloudSlices.at(i)->cameraTranslation;
 
-            Eigen::Matrix4f newPose = iSAM->getCameraPose(threadPack.cloudSlices.at(i)->utime);
+            Matrix4_t newPose = iSAM->getCameraPose(threadPack.cloudSlices.at(i)->utime);
             threadPack.cloudSlices.at(i)->cameraRotation = newPose.topLeftCorner(3, 3);
             threadPack.cloudSlices.at(i)->cameraTranslation = newPose.topRightCorner(3, 1);
 

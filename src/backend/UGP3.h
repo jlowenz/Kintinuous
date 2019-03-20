@@ -72,6 +72,8 @@
 #include <pcl/pcl_macros.h>
 #include <pcl/point_types.h>
 
+#include "../utils/types.hpp"
+
 // add by ktran for Kdtree_flaan search
 struct SearchPoint : public pcl::PointXYZ
 {
@@ -338,7 +340,7 @@ class UpdatableGPT : public pcl::MeshConstruction<pcl::PointXYZRGBNormal>
         /** \brief Temporary variable to store a triangle (as a set of point indices) **/
         pcl::Vertices triangle_;
         /** \brief Temporary variable to store point coordinates **/
-        std::vector<Eigen::Vector3f> coords_;
+        std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f>> coords_;
 
         /** \brief A list of angles to neighbors **/
         std::vector<nnAngle> angles_;

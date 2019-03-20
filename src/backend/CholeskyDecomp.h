@@ -22,6 +22,7 @@
 #include <cholmod.h>
 #include <Eigen/Core>
 
+#include "../utils/types.hpp"
 #include "Jacobian.h"
 
 class CholeskyDecomp
@@ -32,7 +33,7 @@ class CholeskyDecomp
 
         void freeFactor();
 
-        Eigen::VectorXd solve(const Jacobian & jacobian, const Eigen::VectorXd & residual, const bool firstRun);
+        VectorXd_t solve(const Jacobian & jacobian, const Eigen::VectorXd & residual, const bool firstRun);
 
     private:
         cholmod_common Common;

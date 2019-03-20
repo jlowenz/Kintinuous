@@ -68,7 +68,7 @@ TsdfVolume::TsdfVolume(const Eigen::Vector3i& resolution)
 
     volume_.create (volume_y * volume_z, volume_x);
 
-    const Eigen::Vector3f default_volume_size = Eigen::Vector3f::Constant (Volume::get().getVolumeSize()); //meters
+    const Vector3_t default_volume_size = Vector3_t::Constant (Volume::get().getVolumeSize()); //meters
     const float    default_tranc_dist  = 0.03f; //meters
 
     setSize(default_volume_size);
@@ -80,7 +80,7 @@ TsdfVolume::TsdfVolume(const Eigen::Vector3i& resolution)
 }
 
 void
-TsdfVolume::setSize(const Eigen::Vector3f& size)
+TsdfVolume::setSize(const Vector3_t& size)
 {  
     size_ = size;
     setTsdfTruncDist(tranc_dist_);
@@ -102,7 +102,7 @@ TsdfVolume::data() const
     return volume_;
 }
 
-const Eigen::Vector3f&
+const Vector3_t&
 TsdfVolume::getSize() const
 {
     return size_;
@@ -114,7 +114,7 @@ TsdfVolume::getResolution() const
     return resolution_;
 }
 
-const Eigen::Vector3f
+const Vector3_t
 TsdfVolume::getVoxelSize() const
 {    
     return size_.array () / resolution_.array().cast<float>();

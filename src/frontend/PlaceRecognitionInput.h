@@ -19,6 +19,7 @@
 #ifndef PLACERECOGNITIONINPUT_H_
 #define PLACERECOGNITIONINPUT_H_
 
+#include "../utils/types.hpp"
 #include "../utils/ConfigArgs.h"
 #include <Eigen/Core>
 #include <opencv2/opencv.hpp>
@@ -36,8 +37,8 @@ class PlaceRecognitionInput
                               bool isCompressed,
                               uint64_t utime,
                               uint64_t lagTime,
-                              Eigen::Vector3f & trans,
-                              Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rotation)
+                              Vector3_t & trans,
+                              Matrix3_t & rotation)
          : rgbImage(rgbImage),
            imageSize(imageSize),
            depthMap(depthMap),
@@ -199,8 +200,8 @@ class PlaceRecognitionInput
         const bool originallyCompressed;
         uint64_t utime;
         uint64_t lagTime;
-        Eigen::Vector3f trans;
-        Eigen::Matrix<float, 3, 3, Eigen::RowMajor> rotation;
+        Vector3_t trans;
+        Matrix3_t rotation;
         std::vector<float> descriptor;
         std::vector<cv::KeyPoint> keyPoints;
 

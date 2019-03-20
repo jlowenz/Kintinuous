@@ -16,6 +16,7 @@
  * please email commercialisation@nuim.ie.
  */
 
+#include "../utils/types.hpp"
 #include "PNPSolver.h"
 
 PNPSolver::PNPSolver(DepthCamera * depthCamera)
@@ -68,7 +69,7 @@ void PNPSolver::getRelativePose(isam::Pose3d &pose,
     cv::Mat R_matrix = cv::Mat::zeros(3, 3, CV_64FC1);
     cv::Rodrigues(rvec, R_matrix);
 
-    Eigen::MatrixXd isamM(3, 3);
+    MatrixXd_t isamM(3, 3);
 
     for (int i = 0; i < 3; i++)
     {

@@ -78,10 +78,10 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
   int part_index = 0;
 
   // 2D coordinates of points
-  const Eigen::Vector2f uvn_nn_qp_zero = Eigen::Vector2f::Zero();
-  Eigen::Vector2f uvn_current;
-  Eigen::Vector2f uvn_prev;
-  Eigen::Vector2f uvn_next;
+  const Vector2_t uvn_nn_qp_zero = Vector2_t::Zero();
+  Vector2_t uvn_current;
+  Vector2_t uvn_prev;
+  Vector2_t uvn_next;
 
   // initializing fields
   already_connected_ = false; // see declaration for comments :P
@@ -112,8 +112,8 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
   int is_free=0, nr_parts=0, increase_nnn4fn=0, increase_nnn4s=0, increase_dist=0, nr_touched = 0;
   bool is_fringe;
   angles_.resize(nnn_);
-  std::vector<Eigen::Vector2f> uvn_nn (nnn_);
-  Eigen::Vector2f uvn_s;
+  vectors2_t uvn_nn (nnn_);
+  Vector2_t uvn_s;
 
   // iterating through fringe points and finishing them until everything is done
   while (is_free != NONE)
@@ -130,7 +130,7 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
       double sqr_dist_threshold = (std::min)(sqr_max_edge, sqr_mu * sqrDists[1]);
 
       // Get the normal estimate at the current point
-      const Eigen::Vector3f nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
+      const Vector3_t nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
 
       // Get a coordinate system that lies on a plane defined by its normal
       v_ = nc.unitOrthogonal ();
@@ -185,11 +185,11 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
           for (int j = 0; j < nr_edge; j++)
           {
             if (ffn_[nnIdx[doubleEdges[j].index]] != nnIdx[i])
-              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Eigen::Vector2f::Zero());
+              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Vector2_t::Zero());
             if (!visibility)
               break;
             if (sfn_[nnIdx[doubleEdges[j].index]] != nnIdx[i])
-              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Eigen::Vector2f::Zero());
+              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Vector2_t::Zero());
             if (!visibility == false)
               break;
           }
@@ -298,7 +298,7 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
       }
 
       // Get the normal estimate at the current point
-      const Eigen::Vector3f nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
+      const Vector3_t nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
 
       // Get a coordinate system that lies on a plane defined by its normal
       v_ = nc.unitOrthogonal ();
@@ -332,7 +332,7 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
         if ((ffn_[R_] == nnIdx[i]) || (sfn_[R_] == nnIdx[i]))
           angles_[i].visible = true;
         bool same_side = true;
-        const Eigen::Vector3f neighbor_normal = input_->points[(*indices_)[nnIdx[i]]].getNormalVector3fMap ();
+        const Vector3_t neighbor_normal = input_->points[(*indices_)[nnIdx[i]]].getNormalVector3fMap ();
         double cosine = nc.dot (neighbor_normal);
         if (cosine > 1) cosine = 1;
         if (cosine < -1) cosine = -1;
@@ -422,13 +422,13 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
             {
               int f = ffn_[nnIdx[doubleEdges[j].index]];
               if ((f != nnIdx[i]) && (f != R_))
-                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Eigen::Vector2f::Zero());
+                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Vector2_t::Zero());
               if (visibility == false)
                 break;
 
               int s = sfn_[nnIdx[doubleEdges[j].index]];
               if ((s != nnIdx[i]) && (s != R_))
-                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Eigen::Vector2f::Zero());
+                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Vector2_t::Zero());
               if (visibility == false)
                 break;
             }
@@ -767,9 +767,9 @@ UpdatableGPT::performReconstruction (pcl::PolygonMesh &output)
       {
         double angle_so_far = 0, angle_would_be;
         double max_combined_angle = (std::min)(maximum_angle_, M_PI-2*minimum_angle_);
-        Eigen::Vector2f X;
-        Eigen::Vector2f S1;
-        Eigen::Vector2f S2;
+        Vector2_t X;
+        Vector2_t S1;
+        Vector2_t S2;
         std::vector<int> to_erase;
         for (std::vector<int>::iterator it = angleIdx.begin()+1; it != angleIdx.end()-1; it++)
         {
@@ -1043,9 +1043,9 @@ void
 UpdatableGPT::connectPoint (
     pcl::PolygonMesh &output,
     const int prev_index, const int next_index, const int next_next_index,
-    const Eigen::Vector2f &uvn_current,
-    const Eigen::Vector2f &uvn_prev,
-    const Eigen::Vector2f &uvn_next)
+    const Vector2_t &uvn_current,
+    const Vector2_t &uvn_prev,
+    const Vector2_t &uvn_next)
 {
   if (is_current_free_)
   {
@@ -1754,10 +1754,10 @@ UpdatableGPT::updateMesh (
   int part_index = 0; // need to consider
 
   // 2D coordinates of points
-  const Eigen::Vector2f uvn_nn_qp_zero = Eigen::Vector2f::Zero();
-  Eigen::Vector2f uvn_current;
-  Eigen::Vector2f uvn_prev;
-  Eigen::Vector2f uvn_next;
+  const Vector2_t uvn_nn_qp_zero = Vector2_t::Zero();
+  Vector2_t uvn_current;
+  Vector2_t uvn_prev;
+  Vector2_t uvn_next;
 
   // initializing fields
   already_connected_ = false; // see declaration for comments :P
@@ -1767,8 +1767,8 @@ UpdatableGPT::updateMesh (
   int nr_parts=0, increase_nnn4fn=0, increase_nnn4s=0, increase_dist=0, nr_touched = 0;
   bool is_fringe;
   angles_.resize(nnn_);
-  std::vector<Eigen::Vector2f> uvn_nn (nnn_);
-  Eigen::Vector2f uvn_s;
+  std::vector<Vector2_t> uvn_nn (nnn_);
+  Vector2_t uvn_s;
 
   // iterating through fringe points and finishing them until everything is done
   while (is_free != NONE)
@@ -1785,7 +1785,7 @@ UpdatableGPT::updateMesh (
       double sqr_dist_threshold = (std::min)(sqr_max_edge, sqr_mu * sqrDists[1]);
 
       // Get the normal estimate at the current point
-      const Eigen::Vector3f nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
+      const Vector3_t nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
 
       // Get a coordinate system that lies on a plane defined by its normal
       v_ = nc.unitOrthogonal ();
@@ -1841,11 +1841,11 @@ UpdatableGPT::updateMesh (
           for (int j = 0; j < nr_edge; j++)
           {
             if (ffn_[nnIdx[doubleEdges[j].index]] != nnIdx[i])
-              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Eigen::Vector2f::Zero());
+              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Vector2_t::Zero());
             if (!visibility)
               break;
             if (sfn_[nnIdx[doubleEdges[j].index]] != nnIdx[i])
-              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Eigen::Vector2f::Zero());
+              visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Vector2_t::Zero());
             if (!visibility == false)
               break;
           }
@@ -1954,7 +1954,7 @@ UpdatableGPT::updateMesh (
       }
 
       // Get the normal estimate at the current point
-      const Eigen::Vector3f nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
+      const Vector3_t nc = input_->points[(*indices_)[R_]].getNormalVector3fMap ();
 
       // Get a coordinate system that lies on a plane defined by its normal
       v_ = nc.unitOrthogonal ();
@@ -1988,7 +1988,7 @@ UpdatableGPT::updateMesh (
         if ((ffn_[R_] == nnIdx[i]) || (sfn_[R_] == nnIdx[i]))
           angles_[i].visible = true;
         bool same_side = true;
-        const Eigen::Vector3f neighbor_normal = input_->points[(*indices_)[nnIdx[i]]].getNormalVector3fMap ();
+        const Vector3_t neighbor_normal = input_->points[(*indices_)[nnIdx[i]]].getNormalVector3fMap ();
         double cosine = nc.dot (neighbor_normal);
         if (cosine > 1) cosine = 1;
         if (cosine < -1) cosine = -1;
@@ -2078,13 +2078,13 @@ UpdatableGPT::updateMesh (
             {
               int f = ffn_[nnIdx[doubleEdges[j].index]];
               if ((f != nnIdx[i]) && (f != R_))
-                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Eigen::Vector2f::Zero());
+                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].first, Vector2_t::Zero());
               if (visibility == false)
                 break;
 
               int s = sfn_[nnIdx[doubleEdges[j].index]];
               if ((s != nnIdx[i]) && (s != R_))
-                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Eigen::Vector2f::Zero());
+                visibility = isVisibleU(uvn_nn[i], uvn_nn[doubleEdges[j].index], doubleEdges[j].second, Vector2_t::Zero());
               if (visibility == false)
                 break;
             }
@@ -2423,9 +2423,9 @@ UpdatableGPT::updateMesh (
       {
         double angle_so_far = 0, angle_would_be;
         double max_combined_angle = (std::min)(maximum_angle_, M_PI-2*minimum_angle_);
-        Eigen::Vector2f X;
-        Eigen::Vector2f S1;
-        Eigen::Vector2f S2;
+        Vector2_t X;
+        Vector2_t S1;
+        Vector2_t S2;
         std::vector<int> to_erase;
         for (std::vector<int>::iterator it = angleIdx.begin()+1; it != angleIdx.end()-1; it++)
         {

@@ -28,6 +28,7 @@
 #include <opencv2/opencv.hpp>
 #include "cuda/internal.h"
 #include "../utils/ConfigArgs.h"
+#include "../utils/types.hpp"
 #include "CloudSlice.h"
 
 class OdometryProvider
@@ -39,15 +40,15 @@ class OdometryProvider
         virtual ~OdometryProvider()
         {}
 
-        virtual CloudSlice::Odometry getIncrementalTransformation(Eigen::Vector3f & trans,
-                                                                  Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rot,
+        virtual CloudSlice::Odometry getIncrementalTransformation(Vector3_t & trans,
+                                                                  Matrix3_t & rot,
                                                                   const DeviceArray2D<unsigned short> & depth,
                                                                   const DeviceArray2D<PixelRGB> & image,
                                                                   uint64_t timestamp,
                                                                   unsigned char * rgbImage,
                                                                   unsigned short * depthData) = 0;
 
-        virtual Eigen::MatrixXd getCovariance() = 0;
+        virtual MatrixXd_t getCovariance() = 0;
 
         virtual void reset() = 0;
 

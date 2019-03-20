@@ -19,14 +19,15 @@
 #ifndef ICPODOMETRY_H_
 #define ICPODOMETRY_H_
 
+#include "../utils/types.hpp"
 #include "OdometryProvider.h"
 
 class ICPOdometry : public OdometryProvider
 {
     public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-        ICPOdometry(std::vector<Eigen::Vector3f> & tvecs_,
-                    std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_,
+        ICPOdometry(vectors3_t & tvecs_,
+                    matrices3_t & rmats_,
                     std::vector<DeviceArray2D<float> > & vmaps_g_prev_,
                     std::vector<DeviceArray2D<float> > & nmaps_g_prev_,
                     std::vector<DeviceArray2D<float> > & vmaps_curr_,
@@ -37,15 +38,15 @@ class ICPOdometry : public OdometryProvider
 
         virtual ~ICPOdometry();
 
-        CloudSlice::Odometry getIncrementalTransformation(Eigen::Vector3f & trans,
-                                                          Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rot,
+        CloudSlice::Odometry getIncrementalTransformation(Vector3_t & trans,
+                                                          Matrix3_t & rot,
                                                           const DeviceArray2D<unsigned short> & depth,
                                                           const DeviceArray2D<PixelRGB> & image,
                                                           uint64_t timestamp,
                                                           unsigned char * rgbImage,
                                                           unsigned short * depthData);
 
-        Eigen::MatrixXd getCovariance();
+        MatrixXd_t getCovariance();
 
         void reset();
 
@@ -54,8 +55,8 @@ class ICPOdometry : public OdometryProvider
     private:
         int icp_iterations_[LEVELS];
 
-        std::vector<Eigen::Vector3f> & tvecs_;
-        std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_;
+        vectors3_t & tvecs_;
+        matrices3_t & rmats_;
 
         std::vector<DeviceArray2D<float> > & vmaps_g_prev_;
         std::vector<DeviceArray2D<float> > & nmaps_g_prev_;
@@ -65,7 +66,7 @@ class ICPOdometry : public OdometryProvider
 
         Intr & intr;
 
-        Eigen::Matrix<double, 6, 6, Eigen::RowMajor> lastA;
+        Matrix6d_t lastA;
 
         DeviceArray<JtJJtrSE3> sumDataSE3;
         DeviceArray<JtJJtrSE3> outDataSE3;

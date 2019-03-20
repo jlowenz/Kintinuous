@@ -60,7 +60,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 include(CudaComputeTargetFlags.cmake)                  
 APPEND_TARGET_ARCH_FLAGS()
 
-set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}  "-Xcompiler;-fPIC;--shared;--cudart=shared;")           
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}  "-Xcompiler;-fPIC;--shared;--cudart=shared;")
 set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--ftz=true;--prec-div=false;--prec-sqrt=false") 
 
 #CUDA_COMPILE(cuda_objs ${cuda})   
@@ -73,8 +73,8 @@ include_directories(${PCL_INCLUDE_DIRS})
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -msse -msse2 -msse3 -O3 -std=c++11")
-#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -g -std=c++11")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -msse -msse2 -msse3 -O3")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -mstackrealign")
 
 #REMOVE_VTK_DEFINITIONS()
 add_library(util ${utils})
@@ -91,6 +91,17 @@ target_link_libraries(frontend ${PCL_LIBRARIES}
   ${SUITESPARSE_LIBRARIES}
   ${ISAM_LIBRARIES})
 add_library(backend ${backend} ${pnp})
+target_link_libraries(backend ${PCL_LIBRARIES}
+  ${ZLIB_LIBRARY}
+  ${Pangolin_LIBRARIES}
+  ${Boost_LIBRARIES} 
+  ${CUDA_LIBRARIES}
+  ${OpenCV_LIBS}
+  ${DLib_LIBS} 
+  ${DBoW2_LIBS}
+  ${OPENNI2_LIBRARY}
+  ${SUITESPARSE_LIBRARIES}
+  ${ISAM_LIBRARIES})
 
 message("Sources: ${srcs}")
 

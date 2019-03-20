@@ -18,8 +18,8 @@
 
 #include "RGBDOdometry.h"
 
-RGBDOdometry::RGBDOdometry(std::vector<Eigen::Vector3f> & tvecs_,
-                           std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_,
+RGBDOdometry::RGBDOdometry(vectors3_t & tvecs_,
+                           matrices3_t & rmats_,
                            std::vector<DeviceArray2D<float> > & vmaps_g_prev_,
                            std::vector<DeviceArray2D<float> > & nmaps_g_prev_,
                            std::vector<DeviceArray2D<float> > & vmaps_curr_,
@@ -38,7 +38,7 @@ RGBDOdometry::RGBDOdometry(std::vector<Eigen::Vector3f> & tvecs_,
   SOBEL_SCALE(1.0 / pow(2.0, SOBEL_SIZE)),
   MAX_DEPTH_DELTA(0.07),
   MAX_DEPTH(6.0),
-  lastA(Eigen::Matrix<double, 6, 6, Eigen::RowMajor>::Zero()),
+  lastA(Matrix6d_t::Zero()),
   distThres_(distThresh),
   angleThres_ (angleThresh)
 {
@@ -162,20 +162,20 @@ void RGBDOdometry::firstRun(const DeviceArray2D<unsigned short> & depth, const D
     populateRGBDData(depth, image, &lastDepth[0], &lastImage[0]);
 }
 
-CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f & trans,
-                                                                Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rot,
+CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Vector3_t & trans,
+                                                                Matrix3_t & rot,
                                                                 const DeviceArray2D<unsigned short> & depth,
                                                                 const DeviceArray2D<PixelRGB> & image,
                                                                 uint64_t timestamp,
                                                                 unsigned char * rgbImage,
                                                                 unsigned short * depthData)
 {
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev = rmats_[rmats_.size() - 1];
-    Eigen::Vector3f tprev = tvecs_[tvecs_.size() - 1];
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rcurr = Rprev;
-    Eigen::Vector3f tcurr = tprev;
+    Matrix3_t Rprev = rmats_[rmats_.size() - 1];
+    Vector3_t tprev = tvecs_[tvecs_.size() - 1];
+    Matrix3_t Rcurr = Rprev;
+    Vector3_t tcurr = tprev;
 
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> Rprev_inv = Rprev.inverse();
+    Matrix3_t Rprev_inv = Rprev.inverse();
     Mat33 & device_Rprev_inv = device_cast<Mat33>(Rprev_inv);
     float3& device_tprev = device_cast<float3>(tprev);
 
@@ -252,8 +252,8 @@ CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f 
 
             float sigmaVal = std::sqrt((float)sigma / rgbSize == 0 ? 1 : rgbSize);
 
-            Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_icp;
-            Eigen::Matrix<float, 6, 1> b_icp;
+            Matrix6_t A_icp;
+            Vector6_t b_icp;
 
             float residual[2];
 
@@ -288,8 +288,8 @@ CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f 
                         64);
             }
 
-            Eigen::Matrix<float, 6, 6, Eigen::RowMajor> A_rgbd;
-            Eigen::Matrix<float, 6, 1> b_rgbd;
+            Matrix6_t A_rgbd;
+            Vector6_t b_rgbd;
 
             rgbStep(corresImg[i],
                     sigmaVal,
@@ -306,12 +306,12 @@ CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f 
                     128,
                     64);
 
-            Eigen::Matrix<double, 6, 1> result;
+            Vector6d_t result;
 
-            Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_rgbd = A_rgbd.cast<double>();
-            Eigen::Matrix<double, 6, 6, Eigen::RowMajor> dA_icp = A_icp.cast<double>();
-            Eigen::Matrix<double, 6, 1> db_rgbd = b_rgbd.cast<double>();
-            Eigen::Matrix<double, 6, 1> db_icp = b_icp.cast<double>();
+            Matrix6d_t dA_rgbd = A_rgbd.cast<double>();
+            Matrix6d_t dA_icp = A_icp.cast<double>();
+            Vector6d_t db_rgbd = b_rgbd.cast<double>();
+            Vector6d_t db_icp = b_icp.cast<double>();
 
             if(ConfigArgs::get().useRGBDICP)
             {
@@ -338,7 +338,7 @@ CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f 
 
             resultRt = currRt * resultRt;
 
-            Eigen::Matrix<float, 3, 3, Eigen::RowMajor> rotation;
+            Matrix3_t rotation;
             rotation(0, 0) = resultRt.at<double>(0, 0);
             rotation(0, 1) = resultRt.at<double>(0, 1);
             rotation(0, 2) = resultRt.at<double>(0, 2);
@@ -351,7 +351,7 @@ CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f 
             rotation(2, 1) = resultRt.at<double>(2, 1);
             rotation(2, 2) = resultRt.at<double>(2, 2);
 
-            Eigen::Vector3f translation;
+            Vector3_t translation;
             translation(0) = resultRt.at<double>(0, 3);
             translation(1) = resultRt.at<double>(1, 3);
             translation(2) = resultRt.at<double>(2, 3);
@@ -392,7 +392,7 @@ CloudSlice::Odometry RGBDOdometry::getIncrementalTransformation(Eigen::Vector3f 
     return CloudSlice::RGBD;
 }
 
-Eigen::MatrixXd RGBDOdometry::getCovariance()
+MatrixXd_t RGBDOdometry::getCovariance()
 {
     return lastA.cast<double>().lu().inverse();
 }

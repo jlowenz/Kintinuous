@@ -81,198 +81,202 @@
 
 class KintinuousTracker
 {
+ public:
+  ThreadMutexObject<bool> tsdfRequest;
+  bool tsdfAvailable;
+  boost::mutex tsdfMutex;
+
+  bool imageAvailable;
+  boost::mutex imageMutex;
+
+  bool cycledMutex;
+  boost::mutex cloudMutex;
+  boost::condition_variable_any cloudSignal;
+
+  KintinuousTracker(cv::Mat * depthIntrinsics);
+
+  virtual ~KintinuousTracker();
+
+  void processFrame(const DeviceArray2D<unsigned short>& depth,
+                    const DeviceArray2D<PixelRGB> & colors,
+                    unsigned char * rgbImage,
+                    unsigned short * depthData,
+                    uint64_t timestamp,
+                    bool compression,
+                    uint8_t * lastCompressedDepth,
+                    int depthSize,
+                    uint8_t * lastCompressedImage,
+                    int imageSize);
+
+  Vector3_t getVolumeOffset() const;
+
+  void setParked(const bool park);
+
+  Vector3_t getLastTranslation() const;
+
+  Vector3_t getVoxelSize() const;
+
+  void finalise();
+
+  Matrix3_t getLastRotation() const;
+
+  std::vector<CloudSlice *> & getCloudSlices();
+
+  void setOverlap(int overlap);
+
+  CloudSlice * getLiveTsdf();
+  CloudSlice * getLiveImage();
+
+  void reset();
+
+  ThreadMutexObject<uint64_t> init_utime;
+  ThreadMutexObject<unsigned char *> firstRgbImage;
+  ThreadMutexObject<unsigned short *> firstDepthData;
+
+  unsigned char * lastRgbImage;
+  unsigned short * lastDepthData;
+  CloudSlice::Odometry lastOdometry;
+
+  ThreadMutexObject<int> placeRecognitionId;
+
+  static const int PR_BUFFER_SIZE = 3000;
+  PlaceRecognitionInput placeRecognitionBuffer[PR_BUFFER_SIZE];
+
+  /**
+   * Loads a trajectory that is used for the motion estimate
+   * instead of the ICP.
+   */
+  void loadTrajectory(const std::string & filename);
+
+  class DensePose
+  {
   public:
-    ThreadMutexObject<bool> tsdfRequest;
-    bool tsdfAvailable;
-    boost::mutex tsdfMutex;
-
-    bool imageAvailable;
-    boost::mutex imageMutex;
-
-    bool cycledMutex;
-    boost::mutex cloudMutex;
-    boost::condition_variable_any cloudSignal;
-
-    KintinuousTracker(cv::Mat * depthIntrinsics);
-
-    virtual ~KintinuousTracker();
-
-    void processFrame(const DeviceArray2D<unsigned short>& depth,
-                      const DeviceArray2D<PixelRGB> & colors,
-                      unsigned char * rgbImage,
-                      unsigned short * depthData,
-                      uint64_t timestamp,
-                      bool compression,
-                      uint8_t * lastCompressedDepth,
-                      int depthSize,
-                      uint8_t * lastCompressedImage,
-                      int imageSize);
-
-    Eigen::Vector3f getVolumeOffset() const;
-
-    void setParked(const bool park);
-
-    Eigen::Vector3f getLastTranslation() const;
-
-    Eigen::Vector3f getVoxelSize() const;
-
-    void finalise();
-
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> getLastRotation() const;
-
-    std::vector<CloudSlice *> & getCloudSlices();
-
-    void setOverlap(int overlap);
-
-    CloudSlice * getLiveTsdf();
-    CloudSlice * getLiveImage();
-
-    void reset();
-
-    ThreadMutexObject<uint64_t> init_utime;
-    ThreadMutexObject<unsigned char *> firstRgbImage;
-    ThreadMutexObject<unsigned short *> firstDepthData;
-
-    unsigned char * lastRgbImage;
-    unsigned short * lastDepthData;
-    CloudSlice::Odometry lastOdometry;
-
-    ThreadMutexObject<int> placeRecognitionId;
-
-    static const int PR_BUFFER_SIZE = 3000;
-    PlaceRecognitionInput placeRecognitionBuffer[PR_BUFFER_SIZE];
-
-    /**
-     * Loads a trajectory that is used for the motion estimate
-     * instead of the ICP.
-     */
-    void loadTrajectory(const std::string & filename);
-
-    class DensePose
+    
+    DensePose(uint64_t timestamp,
+              const Matrix4_t& pose,
+              bool isLoopPose)
+      : timestamp(timestamp),
+        pose(pose),
+        isLoopPose(isLoopPose)
+    {}
+    
+    DensePose()
+      : pose(Matrix4_t::Identity())
     {
-        public:
-            EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-            DensePose(uint64_t timestamp,
-                      Eigen::Matrix4f pose,
-                      bool isLoopPose)
-             : timestamp(timestamp),
-               pose(pose),
-               isLoopPose(isLoopPose)
-            {}
+    }
 
-            DensePose()
-            {}
+    uint64_t timestamp;
+    Matrix4_t pose;
+    bool isLoopPose;
 
-            uint64_t timestamp;
-            Eigen::Matrix4f pose;
-            bool isLoopPose;
-    };
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+  };
 
-    std::vector<DensePose> densePoseGraph;
-    ThreadMutexObject<int> latestDensePoseId;
+  std::vector<DensePose,Eigen::aligned_allocator<DensePose>> densePoseGraph;
+  ThreadMutexObject<int> latestDensePoseId;
 
-  private:
-    Eigen::Vector3f rodrigues2(const Eigen::Matrix3f& matrix);
+ private:
+  Vector3_t rodrigues2(const Eigen::Matrix3f& matrix);
 
-    /** \brief Frame counter */
-    int global_time_;
+  /** \brief Frame counter */
+  int global_time_;
 
-    //To keep track of how far behind the backend is
-    uint64_t lagTime;
+  //To keep track of how far behind the backend is
+  uint64_t lagTime;
 
-    Intr intr;
+  Intr intr;
 
-    /** \brief Tsdf volume container. */
-    TsdfVolume * tsdf_volume_;
-    ColorVolume * color_volume_;
+  /** \brief Tsdf volume container. */
+  TsdfVolume * tsdf_volume_;
+  ColorVolume * color_volume_;
 
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> initialRotation;
-    Eigen::Vector3f volumeBasis;
+  Matrix3_t initialRotation;
+  Vector3_t volumeBasis;
 
-    /** \brief Array of dpeth pyramids. */
-    std::vector<DeviceArray2D<unsigned short> > depths_curr_;
+  /** \brief Array of dpeth pyramids. */
+  std::vector<DeviceArray2D<unsigned short> > depths_curr_;
 
-    /** \brief Array of pyramids of vertex maps for previous frame in global coordinate space. */
-    std::vector<DeviceArray2D<float> > vmaps_g_prev_;
-    /** \brief Array of pyramids of normal maps for previous frame in global coordinate space. */
-    std::vector<DeviceArray2D<float> > nmaps_g_prev_;
+  /** \brief Array of pyramids of vertex maps for previous frame in global coordinate space. */
+  std::vector<DeviceArray2D<float> > vmaps_g_prev_;
+  /** \brief Array of pyramids of normal maps for previous frame in global coordinate space. */
+  std::vector<DeviceArray2D<float> > nmaps_g_prev_;
 
-    /** \brief Array of pyramids of vertex maps for current frame in current coordinate space. */
-    std::vector<DeviceArray2D<float> > vmaps_curr_;
-    /** \brief Array of pyramids of vertex maps for current frame in current coordinate space. */
-    std::vector<DeviceArray2D<float> > nmaps_curr_;
+  /** \brief Array of pyramids of vertex maps for current frame in current coordinate space. */
+  std::vector<DeviceArray2D<float> > vmaps_curr_;
+  /** \brief Array of pyramids of vertex maps for current frame in current coordinate space. */
+  std::vector<DeviceArray2D<float> > nmaps_curr_;
 
-    DeviceArray2D<uchar4> vmap_curr_color;
+  DeviceArray2D<uchar4> vmap_curr_color;
 
-    /** \brief Buffer for storing scaled depth image */
-    DeviceArray2D<float> depthRawScaled_;
+  /** \brief Buffer for storing scaled depth image */
+  DeviceArray2D<float> depthRawScaled_;
 
-    /** \brief Array of camera rotation matrices for each moment of time. */
-    std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > rmats_;
+  /** \brief Array of camera rotation matrices for each moment of time. */
+  matrices3_t rmats_;
 
-    /** \brief Array of camera translations for each moment of time. */
-    std::vector<Eigen::Vector3f>   tvecs_;
+  /** \brief Array of camera translations for each moment of time. */
+  vectors3_t  tvecs_;
 
-    float place_recognition_movement;
+  float place_recognition_movement;
 
-    int3 voxelWrap;
-    int3 vWrapCopy;
+  int3 voxelWrap;
+  int3 vWrapCopy;
 
-    DeviceArray<pcl::PointXYZRGB> cloud_buffer_;
-    DeviceArray<pcl::PointXYZRGB> cloud_device_;
+  DeviceArray<pcl::PointXYZRGB> cloud_buffer_;
+  DeviceArray<pcl::PointXYZRGB> cloud_device_;
 
-    std::vector<CloudSlice *> sharedCloudSlices;
-    CloudSlice * liveTsdf, * liveImage;
+  std::vector<CloudSlice *> sharedCloudSlices;
+  CloudSlice * liveTsdf, * liveImage;
 
-    bool cycled;
-    int overlap;
-    bool parked;
+  bool cycled;
+  int overlap;
+  bool parked;
 
-    DeviceArray2D<PixelRGB> modelSurface;
-    DeviceArray2D<PixelRGB> modelColor;
-    DeviceArray2D<unsigned short> modelDepth;
-    std::vector<PixelRGB> modelHost;
-    std::vector<unsigned short> modelDepthHost;
+  DeviceArray2D<PixelRGB> modelSurface;
+  DeviceArray2D<PixelRGB> modelColor;
+  DeviceArray2D<unsigned short> modelDepth;
+  std::vector<PixelRGB> modelHost;
+  std::vector<unsigned short> modelDepthHost;
 
-    std::map<uint64_t, Eigen::Isometry3f, std::less<int>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > camera_trajectory;
-    uint64_t current_utime;
-    uint64_t last_utime;
+  std::map<uint64_t, Eigen::Isometry3f, std::less<uint64_t>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > camera_trajectory;
+  uint64_t current_utime;
+  uint64_t last_utime;
 
-    ICPOdometry * icp;
-    RGBDOdometry * rgbd;
-    GroundTruthOdometry * groundTruth;
-    OdometryProvider * odometryProvider;
+  ICPOdometry * icp;
+  RGBDOdometry * rgbd;
+  GroundTruthOdometry * groundTruth;
+  OdometryProvider * odometryProvider;
 
-    Eigen::Vector3f currentGlobalCamera;
+  Vector3_t currentGlobalCamera;
 
-    Eigen::Vector3f lastPlaceRecognitionTrans;
-    Eigen::Matrix<float, 3, 3, Eigen::RowMajor> lastPlaceRecognitionRot;
+  Vector3_t lastPlaceRecognitionTrans;
+  Matrix3_t lastPlaceRecognitionRot;
 
-    void outputPose(uint64_t & timestamp, Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & Rcurr);
+  void outputPose(uint64_t & timestamp, Matrix3_t & Rcurr);
 
-    void getImage();
+  void getImage();
 
-    void getModelDepth();
+  void getModelDepth();
 
-    void allocateBuffers();
+  void allocateBuffers();
 
-    void vWrapCopyUpdate();
+  void vWrapCopyUpdate();
 
-    void mutexOutLiveTsdf();
+  void mutexOutLiveTsdf();
 
-    void mutexOutLiveImage();
+  void mutexOutLiveImage();
 
-    void mutexOutCloudBuffer(float3 & device_tcurr,
-                             int3 voxelTrans,
-                             PlaceRecognitionInput * placeRecognitionFrame = 0);
+  void mutexOutCloudBuffer(float3 & device_tcurr,
+                           int3 voxelTrans,
+                           PlaceRecognitionInput * placeRecognitionFrame = 0);
 
-    void repositionCube(Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & currentRotation);
+  void repositionCube(Matrix3_t & currentRotation);
 
-    PlaceRecognitionInput * addToPlaceRecognition(int depthSize,
-                                                  int imageSize,
-                                                  bool compression,
-                                                  unsigned short * lastCompressedDepth,
-                                                  unsigned char * lastCompressedImage);
+  PlaceRecognitionInput * addToPlaceRecognition(int depthSize,
+                                                int imageSize,
+                                                bool compression,
+                                                unsigned short * lastCompressedDepth,
+                                                unsigned char * lastCompressedImage);
 };
 
 #endif /* KINTINUOUSTRACKER_HPP_ */

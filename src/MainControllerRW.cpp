@@ -204,7 +204,7 @@ int MainController::mainLoop()
     delete rw_reader;
   }
 
-  shutdown();
+  //shutdown();
   
   return 0;
 }

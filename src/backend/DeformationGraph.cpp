@@ -531,7 +531,7 @@ void DeformationGraph::weightVerticesSeq(pcl::PointCloud<pcl::PointXYZRGBNormal>
 
         std::sort(nearNodes.begin(), nearNodes.end(), boost::bind(&std::pair<float, int>::first, _1) < boost::bind(&std::pair<float, int>::first, _2));
 
-        Eigen::Vector3d vertexPosition(sourceVertices->at(i).x, sourceVertices->at(i).y, sourceVertices->at(i).z);
+        Vector3d_t vertexPosition(sourceVertices->at(i).x, sourceVertices->at(i).y, sourceVertices->at(i).z);
         double dMax = nearNodes.at(k).first;
 
         std::vector<VertexWeightMap> newMap;
@@ -564,7 +564,7 @@ void DeformationGraph::weightVerticesNN(pcl::KdTreeFLANN<pcl::PointXYZRGBNormal>
     {
         assert(graphTree.nearestKSearch(sourceVertices->at(i), k + 1, pointIdxNKNSearch, pointNKNSquaredDistance) == k + 1);
 
-        Eigen::Vector3d vertexPosition(sourceVertices->at(i).x, sourceVertices->at(i).y, sourceVertices->at(i).z);
+        Vector3d_t vertexPosition(sourceVertices->at(i).x, sourceVertices->at(i).y, sourceVertices->at(i).z);
         double dMax = sqrt(pointNKNSquaredDistance.back());
 
         std::vector<VertexWeightMap> newMap;
@@ -617,7 +617,7 @@ void DeformationGraph::weightVerticesNNTemporal(pcl::KdTreeFLANN<pcl::PointXYZRG
             }
         }
 
-        Eigen::Vector3d vertexPosition(sourceVertices->at(i).x, sourceVertices->at(i).y, sourceVertices->at(i).z);
+        Vector3d_t vertexPosition(sourceVertices->at(i).x, sourceVertices->at(i).y, sourceVertices->at(i).z);
         double dMax = sqrt(validDistances.back());
 
         std::vector<VertexWeightMap> newMap;
@@ -659,8 +659,8 @@ void DeformationGraph::applyGraphToVertices(int numThreads)
 
 void DeformationGraph::applyGraphThread(int id, int numThreads)
 {
-    Eigen::Vector3d position;
-    Eigen::Vector3d normal;
+    Vector3d_t position;
+    Vector3d_t normal;
 
     for(unsigned int i = id; i < sourceVertices->size(); i += numThreads)
     {
@@ -676,7 +676,7 @@ void DeformationGraph::applyGraphThread(int id, int numThreads)
     }
 }
 
-void DeformationGraph::addConstraint(int vertexId, Eigen::Vector3d & target)
+void DeformationGraph::addConstraint(int vertexId, Vector3d_t & target)
 {
     assert(initialised);
 
@@ -719,7 +719,7 @@ void DeformationGraph::optimiseGraphSparse()
     //6 per E_rot, 3 * k per E_reg and 3 * p per E_con
     const int rows = (eRotRows + eRegRows * k) * graph.size() + eConRows * constraints.size();
 
-    Eigen::VectorXd rCon = sparseResidualCons(eConRows * constraints.size());
+    VectorXd_t rCon = sparseResidualCons(eConRows * constraints.size());
 
     float graphError = rCon.norm() / constraints.size();
 
@@ -729,7 +729,7 @@ void DeformationGraph::optimiseGraphSparse()
         return;
     }
 
-    Eigen::VectorXd residual = sparseResidual(rows);
+    VectorXd_t residual = sparseResidual(rows);
 
     Jacobian jacobian;
 
@@ -745,7 +745,7 @@ void DeformationGraph::optimiseGraphSparse()
 
     while(iter++ < 10)
     {
-        Eigen::VectorXd delta = cholesky.solve(jacobian, -residual, iter == 1);
+        VectorXd_t delta = cholesky.solve(jacobian, -residual, iter == 1);
 
         applyDeltaSparse(delta);
 
@@ -783,7 +783,7 @@ void DeformationGraph::sparseJacobian(Jacobian & jacobian, const int numRows, co
     for(unsigned int j = 0; j < graph.size(); j++)
     {
         //No weights for rotation as rotation weight = 1
-        const Eigen::Matrix3d & rotation = graph.at(j)->rotation;
+        const Matrix3d_t & rotation = graph.at(j)->rotation;
 
         int colOffset = graph.at(j)->id * numVariables;
 
@@ -841,7 +841,7 @@ void DeformationGraph::sparseJacobian(Jacobian & jacobian, const int numRows, co
             rows[lastRow + 1] = new OrderedJacobianRow(5);
             rows[lastRow + 2] = new OrderedJacobianRow(5);
 
-            Eigen::Vector3d delta = graph.at(j)->neighbours.at(n)->position - graph.at(j)->position;
+            Vector3d_t delta = graph.at(j)->neighbours.at(n)->position - graph.at(j)->position;
 
             int colOffsetN = graph.at(j)->neighbours.at(n)->id * numVariables;
 
@@ -885,7 +885,7 @@ void DeformationGraph::sparseJacobian(Jacobian & jacobian, const int numRows, co
         //For each k-node we have a weight
         const std::vector<VertexWeightMap> & weightMap = vertexMap.at(constraints.at(l).vertexId);
 
-        Eigen::Vector3d sourcePosition(sourceVertices->at(constraints.at(l).vertexId).x,
+        Vector3d_t sourcePosition(sourceVertices->at(constraints.at(l).vertexId).x,
                                        sourceVertices->at(constraints.at(l).vertexId).y,
                                        sourceVertices->at(constraints.at(l).vertexId).z);
 
@@ -901,7 +901,7 @@ void DeformationGraph::sparseJacobian(Jacobian & jacobian, const int numRows, co
         {
             int colOffset = graph.at(weightMap.at(i).node)->id * numVariables;
 
-            Eigen::Vector3d delta = (sourcePosition - graph.at(weightMap.at(i).node)->position) * weightMap.at(i).weight;
+            Vector3d_t delta = (sourcePosition - graph.at(weightMap.at(i).node)->position) * weightMap.at(i).weight;
 
             rows[lastRow]->append(colOffset, delta(0) * sqrt(wCon));
             rows[lastRow]->append(colOffset + 3, delta(1) * sqrt(wCon));
@@ -927,17 +927,17 @@ void DeformationGraph::sparseJacobian(Jacobian & jacobian, const int numRows, co
     jacobian.assign(rows, numCols);
 }
 
-Eigen::VectorXd DeformationGraph::sparseResidual(const int numRows)
+VectorXd_t DeformationGraph::sparseResidual(const int numRows)
 {
     //Now the residual
-    Eigen::VectorXd residual(numRows);
+    VectorXd_t residual(numRows);
 
     int lastRow = 0;
 
     for(unsigned int j = 0; j < graph.size(); j++)
     {
         //No weights for rotation as rotation weight = 1
-        const Eigen::Matrix3d & rotation = graph.at(j)->rotation;
+        const Matrix3d_t & rotation = graph.at(j)->rotation;
 
         //ab + de + gh
         residual(lastRow) = rotation.col(0).dot(rotation.col(1));
@@ -972,8 +972,8 @@ Eigen::VectorXd DeformationGraph::sparseResidual(const int numRows)
         }
     }
 
-    Eigen::Vector3d position;
-    Eigen::Vector3d normal;
+    Vector3d_t position;
+    Vector3d_t normal;
     for(unsigned int l = 0; l < constraints.size(); l++)
     {
         //Compute desired position for cost
@@ -996,7 +996,7 @@ void DeformationGraph::resetGraph()
     }
 }
 
-void DeformationGraph::applyDeltaSparse(Eigen::VectorXd & delta)
+void DeformationGraph::applyDeltaSparse(VectorXd_t & delta)
 {
     assert(initialised);
 
@@ -1025,7 +1025,7 @@ void DeformationGraph::applyDeltaSparse(Eigen::VectorXd & delta)
     }
 }
 
-void DeformationGraph::computeVertexPosition(int vertexId, Eigen::Vector3d & position, Eigen::Vector3d & normal)
+void DeformationGraph::computeVertexPosition(int vertexId, Vector3d_t & position, Vector3d_t & normal)
 {
     assert(initialised);
 
@@ -1039,8 +1039,8 @@ void DeformationGraph::computeVertexPosition(int vertexId, Eigen::Vector3d & pos
     normal(1) = 0;
     normal(2) = 0;
 
-    Eigen::Vector3d sourcePosition(sourceVertices->at(vertexId).x, sourceVertices->at(vertexId).y, sourceVertices->at(vertexId).z);
-    Eigen::Vector3d sourceNormal(sourceVertices->at(vertexId).normal_x, sourceVertices->at(vertexId).normal_y, sourceVertices->at(vertexId).normal_z);
+    Vector3d_t sourcePosition(sourceVertices->at(vertexId).x, sourceVertices->at(vertexId).y, sourceVertices->at(vertexId).z);
+    Vector3d_t sourceNormal(sourceVertices->at(vertexId).normal_x, sourceVertices->at(vertexId).normal_y, sourceVertices->at(vertexId).normal_z);
 
     for(unsigned int i = 0; i < weightMap.size(); i++)
     {

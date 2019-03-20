@@ -63,6 +63,7 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 #include "../frontend/Resolution.h"
+#include "../utils/types.hpp"
 
 class DepthCamera
 {
@@ -74,9 +75,9 @@ class DepthCamera
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr convertToXYZPointCloud (unsigned short * depth_image, float maxDist = 4.0f);
 
-        void projectInlierMatches(std::vector<std::pair<int2, int2> > inliers,
-                                  std::vector<Eigen::Vector3d> & inl1,
-                                  std::vector<Eigen::Vector3d> & inl2,
+        void projectInlierMatches(const std::vector<std::pair<int2, int2> >& inliers,
+                                  vectors3d_t & inl1,
+                                  vectors3d_t & inl2,
                                   unsigned short * depth1,
                                   unsigned short * depth2);
 

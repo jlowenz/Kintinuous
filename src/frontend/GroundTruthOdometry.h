@@ -25,22 +25,22 @@
 class GroundTruthOdometry : public OdometryProvider
 {
     public:
-        GroundTruthOdometry(std::vector<Eigen::Vector3f> & tvecs_,
-                            std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_,
-                            std::map<uint64_t, Eigen::Isometry3f, std::less<int>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > & camera_trajectory,
+        GroundTruthOdometry(vectors3_t & tvecs_,
+                            matrices3_t & rmats_,
+                            std::map<uint64_t, Eigen::Isometry3f, std::less<uint64_t>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > & camera_trajectory,
                             uint64_t & last_utime);
 
         virtual ~GroundTruthOdometry();
 
-        CloudSlice::Odometry getIncrementalTransformation(Eigen::Vector3f & trans,
-                                                          Eigen::Matrix<float, 3, 3, Eigen::RowMajor> & rot,
+        CloudSlice::Odometry getIncrementalTransformation(Vector3_t & trans,
+                                                          Matrix3_t & rot,
                                                           const DeviceArray2D<unsigned short> & depth,
                                                           const DeviceArray2D<PixelRGB> & image,
                                                           uint64_t timestamp,
                                                           unsigned char * rgbImage,
                                                           unsigned short * depthData);
 
-        Eigen::MatrixXd getCovariance();
+        MatrixXd_t getCovariance();
 
         void reset();
 
@@ -49,10 +49,11 @@ class GroundTruthOdometry : public OdometryProvider
                     uint64_t timestamp);
 
     private:
-        std::vector<Eigen::Vector3f> & tvecs_;
-        std::vector<Eigen::Matrix<float, 3, 3, Eigen::RowMajor> > & rmats_;
+        vectors3_t & tvecs_;
+        matrices3_t & rmats_;
 
-        std::map<uint64_t, Eigen::Isometry3f, std::less<int>, Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > & camera_trajectory;
+        std::map<uint64_t, Eigen::Isometry3f, std::less<uint64_t>,
+          Eigen::aligned_allocator<std::pair<const uint64_t, Eigen::Isometry3f> > > & camera_trajectory;
         uint64_t & last_utime;
 };
 
